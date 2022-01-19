@@ -37,6 +37,12 @@ This guide goes through how to deploy a custom Red Hat OpenShift on AWS (ROSA) c
     1. cp ./oc /usr/local/bin
     1. ln -s /usr/local/bin /usr/local/kubectl
 
+1. Deploy a cluster
+    
+        $ rosa create cluster --interactive --sts
+
+    This will ask a number of questions to customize the build. 
+
 ## References
 Instructions - [https://console.redhat.com/openshift/create/rosa/welcome](https://console.redhat.com/openshift/create/rosa/welcome)
 AWS Prerequisite Details - [https://docs.openshift.com/rosa/rosa_getting_started/rosa-aws-prereqs.html](https://docs.openshift.com/rosa/rosa_getting_started/rosa-aws-prereqs.html)

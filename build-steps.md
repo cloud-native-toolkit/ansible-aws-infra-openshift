@@ -29,8 +29,11 @@ General
 1. Create Internet Gateways
 
     For each required gateway
+    1. Create fixed IP addresses for incoming connections
     1. [Create Internet Gateway](AWS-CLI-cmds.md#create-internet-gateway)
     1. [Associate gateway with VPC](AWS-CLI-cmds.md#associate-gateway)
+    1. Create elastic IP allocations for NAT gateways
+    1. Create NAT gateway for egress only
 
 1. Create VPC Peers
 

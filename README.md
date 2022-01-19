@@ -6,22 +6,28 @@
  ## DRAFT
  It is currently a work in progress.
 
- The [inventory.yaml](inventory.yaml) file represents the components and example variables of the required cloud environment.
+ Currently working on the network elements to determine how to emulate the FS Cloud security features in AWS, including Network ACLs, Security Groups, multiple VPCs, routing tables, internet gateways, VPN endpoints and so forth.
 
- The [variables.json](variables.json) file represents the variables of a particular build as input to automation.
+ The [inventory.yaml](inventory.yaml) file represents the components and example variables of the required cloud environment. My own notes on what parameters were needed for each component. This will be migrated into the variables.json file.
 
- The [build-steps](build-steps.md) readme contains the manual steps to create the cloud environment.
+ The [variables.json](variables.json) file represents the variables of a particular build as input to automation and a more formal way of capturing the parameters. Read by Ansible.
 
- The [ROSA-cluster readme](ROSA-cluster.md) documents the process to build the OpenShift clusters.
+ The [build-steps](build-steps.md) readme contains the manual steps to create the cloud environment. Currently using the AWS CLI. Investigating if using Ansible AWS module makes this easier or harder.
 
- The [AWS-CLI-cmds readme](AWS-CLI-cmds.md) document contains the key AWS CLI commands that would be utilized for a build. These could be included in an Ansible playbook.
+ The [Red Hat OpenShift on AWS (ROSA)](ROSA-cluster.md) documents the steps to build the OpenShift clusters. 
+
+ The [AWS-CLI-cmds readme](AWS-CLI-cmds.md) document contains the key AWS CLI commands that would be utilized for a build. These could be included in an Ansible playbook. Per above, investigating if it is easier to use Ansible command line calls to aws cli or aws modules.
 
  The architectural overview of the environment is as follows:
- ![Architecture Overview](./static/FS-Cloud-on-AWS.drawio.png)
+
+    ![Architecture Overview](./static/FS-Cloud-on-AWS.png)
 
 ## References
 
 Install AWS CLI [https://aws.amazon.com/cli/](https://aws.amazon.com/cli/)
+
 AWS CLI reference [https://awscli.amazonaws.com/v2/documentation/api/latest/reference/ec2/index.html](https://awscli.amazonaws.com/v2/documentation/api/latest/reference/ec2/index.html)
 
 A subset of the CLI reference is documented in this repository [here](AWS-CLI-cmds.md) for the relevant commands and syntax to build the cloud.
+
+Ansible CLI module reference (amazon.aws) [https://docs.ansible.com/ansible/latest/collections/amazon/aws/index.html](https://docs.ansible.com/ansible/latest/collections/amazon/aws/index.html)
