@@ -20,7 +20,7 @@
 
  The architectural overview of the environment is as follows:
 
-    ![Architecture Overview](./static/FS-Cloud-on-AWS.png)
+![Architecture Overview](./static/FS-Cloud-on-AWS.png)
 
 ## References
 
