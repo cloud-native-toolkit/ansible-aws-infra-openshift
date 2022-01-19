@@ -12,7 +12,7 @@
 
  The [variables.json](variables.json) file represents the variables of a particular build as input to automation and a more formal way of capturing the parameters. Read by Ansible.
 
- The [build-steps](build-steps.md) readme contains the manual steps to create the cloud environment. Currently using the AWS CLI. Investigating if using Ansible AWS module makes this easier or harder.
+ The [build-steps](build-steps.md) readme contains the manual steps using the AWS CLI to create the cloud environment. Will be migrated to Ansible for automation.
 
  The [Red Hat OpenShift on AWS (ROSA)](ROSA-cluster.md) documents the steps to build the OpenShift clusters. 
 
