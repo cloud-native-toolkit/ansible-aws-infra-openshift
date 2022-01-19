@@ -1,0 +1,29 @@
+# tasks to create a new subnet in the Edge VPC
+
+# Ingress subnets
+- name: Create subnet for ingres01
+  amazon.aws.ec2_vpc_subnet:
+    state: present
+    vpc_id: "{{edge_vpc}}"
+    cidr: "{{ingress01_cidr}}"
+    tags:
+      Name: ingres01
+  register: ingres01_subnet
+
+- name: Create subnet for ingres02
+  amazon.aws.ec2_vpc_subnet:
+    state: present
+    vpc_id: "{{edge_vpc}}"
+    cidr: "{{ingress02_cidr}}"
+    tags:
+      Name: ingres02
+  register: ingres02_subnet
+
+- name: Create subnet for ingres03
+  amazon.aws.ec2_vpc_subnet:
+    state: present
+    vpc_id: "{{edge_vpc}}"
+    cidr: "{{ingress03_cidr}}"
+    tags:
+      Name: ingres03
+  register: ingres03_subnet

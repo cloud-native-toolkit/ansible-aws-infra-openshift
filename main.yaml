@@ -1,0 +1,7 @@
+region:
+  - edge_vpc:
+    - ingress_acl:
+    - bastion_acl:
+    - egress_acl:
+  - management_vpc:
+  - workload_vpc:

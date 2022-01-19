@@ -1,0 +1,21 @@
+{ "aws-region" : "us-east-1",
+    "vpcs" : [
+        { "edge" : "fs-cloud-edge-vpc",
+            "cidrs" : [
+                {   "name" : "az1_cidr", "cidr" : "10.1.0.0/18"},
+                {   "name" : "az2_cidr", "cidr" : "10.2.0.0/18"},
+                {   "name" : "az3_cidr", "cidr" : "10.3.0.0/18"}
+            ],
+            "availability-zones" : [
+                {   "name" : "az1", "aws-zone" : "us-east-1a"},
+                {   "name" : "az2", "aws-zone" : "us-east-1b"},
+                {   "name" : "az3", "aws-zone" : "us-east-1c"}
+            ],
+            "network-acls" : [
+                { }
+            ]
+        },
+        { "management" : "fs-cloud-mgmt-vpc"},
+        { "workload" : "fs-cloud-workload-vpc"}
+    ]
+}

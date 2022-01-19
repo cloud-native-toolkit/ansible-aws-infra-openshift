@@ -1,0 +1,240 @@
+edge:
+  vpc:
+    name: fs-cloud-edge-vpc
+    tenancy: Default
+    networks:
+        - cidr: 10.1.0.0/18
+        - cidr: 10.2.0.0/18
+        - cidr: 10.3.0.0/18
+        - cidr: 10.4.0.0/18
+  internet_gateway:
+    name: edge-gateway
+    attached_vpc: fs-cloud-edge-vpc
+  nat-gateways:
+    - name: edge-egress-gw01
+      subnet: edge-egress01
+      connectivity_type: Public
+      elastic_ip: 
+  acls:
+    - name: edge-ingress-acl
+      vpc: fs-cloud-edge-vpc
+      inbound_rules:
+        - name: Deny-all-inbound
+          ip: 0.0.0.0
+          port: All
+          protocol: All
+          action: Deny
+      outbound_rules:
+        - name: Deny-all-outbound
+          ip: 0.0.0.0
+          port: All
+          protocol: All
+          action: Deny
+    - name: edge-bastion-acl
+      vpc: fs-cloud-edge-vpc
+      inbound_rules:
+        - name: Deny-all-inbound
+          ip: 0.0.0.0
+          port: All
+          protocol: All
+          action: Deny
+      outbound_rules:
+        - name: Deny-all-outbound
+          ip: 0.0.0.0
+          port: All
+          protocol: All
+          action: Deny
+    - name: edge-egress-acl
+      vpc: fs-cloud-edge-vpc
+      inbound_rules:
+        - name: "*"
+          friendly_name: Default inbound rule
+          source: 0.0.0.0/0
+          port: All
+          protocol: All
+          action: Deny
+        - name: 1001
+          friendly_name: Allow inbound from worker nodes AZ 1
+          source: 10.10.10.0/24
+          port: All
+          protocol: All
+          action: Allow
+        - name: 1002
+          friendly_name: Allow inbound from worker nodes AZ 2
+          source: 10.20.10.0/24
+          port: All
+          protocol: All
+          action: Allow
+        - name: 1002
+          friendly_name: Allow inbound from worker nodes AZ 3
+          source: 10.30.10.0/24
+          port: All
+          protocol: All
+          action: Allow
+      outbound_rules:
+        - name: "*"
+          friendly_name: Default outbound rule
+          source: 0.0.0.0/0
+          port: All
+          protocol: All
+          action: Deny
+        - name: 1000
+          friendly_name: Allow all outbound
+          source: 0.0.0.0/0
+          port: All
+          protocol: All
+          action: Allow
+  subnets:
+    - name: edge-ingress01
+      availability_zone: us-east-1a
+      cidr_block: 10.1.10.0/24
+      network_acl: edge-ingress-acl    # Not able to automate this with ansible module
+    - name: edge-egress01
+      availability_zone: us-east-1a
+      cidr_block: 10.1.30.0/24
+      network_acl: edge-egress-acl    # Not able to automate this with ansible module
+  security_groups:
+    - name: sg_edge-egress
+      description: security group for management worker nodes
+      vpc: fs-cloud-edge-vpc
+      inbound_rules:
+      - description: All from workers AZ 1
+        type: All
+        protocol: All
+        port_range: All
+        source: 10.10.10.0/24
+      - description: All from workers AZ 2
+        type: All
+        protocol: All
+        port_range: All
+        source: 10.20.10.0/24
+      - description: All from workers AZ 3
+        type: All
+        protocol: All
+        port_range: All
+        source: 10.30.10.0/24
+
+
+mgmt:
+  hosts:
+  vpc:
+    name: fs-cloud-mgmt-vpc
+    tenancy: Default    # Use of dedicated prevents deploying small EC2 images
+    networks:
+        - cidr: 10.10.0.0/18
+        - cidr: 10.20.0.0/18
+        - cidr: 10.30.0.0/18
+  acls:
+    - name: mgmt-worker-acl
+      vpc: fs-cloud-mgmt-vpc
+      inbound_rules:
+        - name: "*"
+          friendly_name: Default inbound rule
+          source: 0.0.0.0/0
+          port: All
+          protocol: All
+          action: Deny
+      outbound_rules:
+        - name: "*"
+          friendly_name: Default outbound rule
+          source: 0.0.0.0/0
+          port: All
+          protocol: All
+          action: Deny
+        - name: 1000
+          friendly_name: Allow all outbound
+          source: 0.0.0.0/0
+          port: All
+          protocol: All
+          action: Allow
+    - name: mgmt-vpe-acl
+      inbound_rules:
+        - name: Deny-all-inbound
+          ip: 0.0.0.0
+          port: All
+          protocol: All
+          action: Deny
+      outbound_rules:
+        - name: Deny-all-outbound
+          ip: 0.0.0.0
+          port: All
+          protocol: All
+          action: Deny
+    - name: mgmt-ingress-acl
+      inbound_rules:
+        - name: Deny-all-inbound
+          ip: 0.0.0.0
+          port: All
+          protocol: All
+          action: Deny
+      outbound_rules:
+        - name: Deny-all-outbound
+          ip: 0.0.0.0
+          port: All
+          protocol: All
+          action: Deny
+  subnets:
+    - name: mgmt-worker01
+      availability_zone: us-east-1a
+      cidr_block: 10.10.10.0/24
+      network_acl: mgmt-worker-acl    # Not able to automate this with ansible module
+  security_groups:
+    - name: sg_mgmt-workers
+      description: security group for management worker nodes
+      vpc: fs-cloud-mgmt-vpc
+      inbound_rules:
+      - description: allow HTTPS inbound
+        type: HTTPS
+        protocol: TCP
+        port_range: 443
+        source: 10.0.0.0/8
+      - description: allow SSH inbound
+        type: SSH
+        protocol: TCP
+        port_range: 22
+        source: MyIP
+      outbound_rules:
+      - description: Allow all outbound
+        type: All
+        protocol: All
+        port_range: All
+        source: 0.0.0.0/0
+  route_table:
+    name: mgmt-vpc-route-table
+    routes:
+    - destination: 10.10.0.0/8
+      description: Local default from cidrs defined in VPC (auto generated)
+      target: local
+    - destination: 10.20.0.0/8
+      description: Local default from cidrs defined in VPC (auto generated)
+      target: local
+    - destination: 10.30.0.0/8
+      description: Local default from cidrs defined in VPC (auto generated)
+      target: local
+    - destination: 10.1.30.0/24
+      description: Route to egress AZ 1
+      target: edge-worker-peer
+    - destination: 10.2.30.0/24
+      description: Route to egress AZ 2
+      target: edge-worker-peer
+    - destination: 10.3.30.0/24
+      description: Route to egress AZ 3
+      target: edge-worker-peer
+
+
+workload:
+    vpc:
+    - name: fs-cloud-workload-vpc
+      tenancy: Default    # Use of dedicated prevents deploying small EC2 images
+      networks:
+        - cidr: 10.40.0.0/18
+        - cidr: 10.50.0.0/18
+        - cidr: 10.60.0.0/18
+    acls:
+
+vpc_peering:    # These need to be accepted by the VPC owner before being actinoed - automation?
+  - name: edge-worker-peer
+    first_vpc: fs-cloud-mgmt-vpc
+    second_vpc: fs-cloud-edge-vpc
+    account: my_account
+    region: us-east-1
