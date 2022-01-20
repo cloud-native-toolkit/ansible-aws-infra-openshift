@@ -1,6 +1,7 @@
 { "region" : { "name" : "us-east-1" },
 "vpcs" : [
-    { "name" : "fs-cloud-edge-vpc",
+    {   "name" : "fs-cloud-edge-vpc",
+        "usage" : "edge",
         "cidrs" : [
             {   "name" : "az1_cidr", "cidr" : "10.1.0.0/18" },
             {   "name" : "az2_cidr", "cidr" : "10.2.0.0/18" },
@@ -72,8 +73,12 @@
             }
         ]
     },
-    { "name" : "fs-cloud-mgmt-vpc"},
-    { "name" : "fs-cloud-workload-vpc"}
+    {   "name" : "fs-cloud-mgmt-vpc",
+        "usage" : "management"
+    },
+    {   "name" : "fs-cloud-workload-vpc",
+        "usage" : "workload"
+    }
 ],
 "vpc-peers" : [
     {   "name"          : "mgmt-edge-vpc",

@@ -1,0 +1,14 @@
+---
+
+  - name: Read JSON File
+    hosts: localhost
+    tasks:
+
+    - name: Validate variables file against schema
+      ansible.utils.validate:
+        data: "{{ item }}"
+        criteria:
+          - "{{ lookup('file','../variables-schema.json') | from_json }}"
+        engine: ansible.utils.jsonschema
+      ignore_errors: true
+      register: result

@@ -1,34 +1,46 @@
 ---
-  - name: ReadJsonfile
+
+  # Test playbook for reading json files
+  
+  - name: Read JSON File
     hosts: localhost
     tasks:
-      - name: Display the JSON file content
+      - name: Read the JSON file content
         shell: cat ../variables.json
-        register: result
+        register: jsoncontent
 
       - name: Save JSON data to variables as Fact
+        no_log: True
         set_fact:
-          jsondata: "{{ result.stdout | from_json }}"
-
-      - name: Get list of VPC names
-        set_fact:
-          vpcnames: "{{ jsondata | json_query(jmesquery) }}"
-        vars:
-          jmesquery: 'vpcs[*].name'
+          jsondata: "{{ jsoncontent.stdout | from_json }}"
 
       - name: Get region
+        no_log: True
         set_fact:
           awsregion: "{{ jsondata | json_query(jmesquery) }}"
         vars:
           jmesquery: 'region.name'
 
-      - name: Display AWS region
-        debug: 
-          msg : " AWS Region = {{ awsregion }} "
+      - name: Display Region to be utilized
+        debug:
+          msg: ' AWS Region = {{ awsregion }} '
 
-      - name: List of VPCs to create
-        debug: 
-          msg: "{{ item }}"
-        with_items:
-          - "{{ vpcnames }}"
+      - name: Read VPCs to be created
+        set_fact:
+          vpclist: "{{ vpcs|default({}) | combine ( {item.name : item.usage} ) }}"
+        with_items: "{{ jsondata | json_query('[*]') }}"
+
+      - name: Display VPCs
+        debug: var=vpclist
+
+      # Following just displays the output without saving as a variable
+      #- name: List of VPCs to create
+      #  debug: msg="{{ jsondata | json_query(jmesquery) }}"
+      #  vars:
+      #    jmesquery: 'vpcs[*].name'
+
+      #- name: VPCs to be created by type
+      #  debug: msg="{{ jsondata | json_query(jmesquery) }}"
+      #  vars:
+      #    jmesquery: 'vpcs[*].name'
 
