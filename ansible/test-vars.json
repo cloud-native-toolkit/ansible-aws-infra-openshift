@@ -1,14 +1,14 @@
 { 
     "region" : { "name" : "us-east-1" },
-    "vpcs" : [
-        {   "name" : "fs-cloud-edge-vpc",
-            "usage" : "edge"
+    "vpcs" : {
+        "edge": {   
+            "name" : "fs-cloud-edge-vpc"
         },
-        {   "name" : "fs-cloud-mgmt-vpc",
-            "usage" : "management"
+        "management": {   
+            "name" : "fs-cloud-mgmt-vpc"
         },
-        {   "name" : "fs-cloud-workload-vpc",
-            "usage" : "workload"
+        "workload" :  {   
+            "name" : "fs-cloud-workload-vpc"
         }
-    ]
+    }
 }

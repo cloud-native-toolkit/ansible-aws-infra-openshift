@@ -197,3 +197,15 @@ Where:
 Required output:
 
 VpcPeeringConnectionId : {{vpc_peer_id}} - The identifier of the VPC peer just created.
+
+## Describe a VPC
+
+This command outputs the details of a VPC with the tag key "Name" and Value "vpc_name".
+
+Reference [https://awscli.amazonaws.com/v2/documentation/api/latest/reference/ec2/describe-vpcs.html](https://awscli.amazonaws.com/v2/documentation/api/latest/reference/ec2/describe-vpcs.html)
+
+    $ aws ec2 describe-vpcs --filters Name=tag:Name,Values={{vpc_name}}
+
+where:
+
+{{vpc_name}}    - Name of VPC (e.g. fs-cloud-mgmt)

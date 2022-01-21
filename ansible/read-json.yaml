@@ -2,36 +2,47 @@
 
   # Test playbook for reading json files
   
-  - name: Read JSON File
+  - name: Parse JSON File
     hosts: localhost
+
+    vars:
+      varData: "{{ lookup('file', './test-vars.json') | from_json }}"
+      vpcData: "{{ lookup('file', './vpcs.json') | from_json }}"   # This will be from an AWS query in future.
+      
     tasks:
-      - name: Read the JSON file content
-        shell: cat ../variables.json
-        register: jsoncontent
-
-      - name: Save JSON data to variables as Fact
-        no_log: True
-        set_fact:
-          jsondata: "{{ jsoncontent.stdout | from_json }}"
-
-      - name: Get region
-        no_log: True
-        set_fact:
-          awsregion: "{{ jsondata | json_query(jmesquery) }}"
-        vars:
-          jmesquery: 'region.name'
-
-      - name: Display Region to be utilized
+      - name: Display region to be utilized
         debug:
-          msg: ' AWS Region = {{ awsregion }} '
+          msg: "Region = {{varData.region.name}}"
 
-      - name: Read VPCs to be created
+      - name: Create VPC dictionary
         set_fact:
-          vpclist: "{{ vpcs|default({}) | combine ( {item.name : item.usage} ) }}"
-        with_items: "{{ jsondata | json_query('[*]') }}"
+          vpcList: "{{varData.vpcs}}"
 
-      - name: Display VPCs
-        debug: var=vpclist
+      - name: Display VPC details
+        debug:
+          msg: " Edge VPC = {{vpcList.edge.name}} | Management VPC = {{vpcList.management.name}} | Workload VPC = {{vpcList.workload.name}}"
+
+      - name: Display created VPC identification details
+        debug:
+          msg: "{{item.VpcId}}"
+        loop: "{{vpcData.Vpcs}}"
+        when: "item.State =='available'"
+
+      - name: Display list of VPC id and names
+        debug:
+          msg: "{{ item | combine(item.VpcId, item.Tags.Value) }}"
+        loop: "{{ vpcData.Vpcs }}"
+          
+      - name: Get edge VPC id
+        set_fact:
+          edge_vpc_id: "{{ vpcData | json_query(query) }}"
+        vars:
+          query: "vpcData.Vpcs.[?Tags.Value.contains(@, 'fs-cloud-mgmt-vpc')].VpcId"
+
+      #- name: Display VPCs to be utilized
+      #  debug:
+      #    msg: "{{ item.vpcs.name }} "
+      #  loop: "{{ varData.vpcs }}"
 
       # Following just displays the output without saving as a variable
       #- name: List of VPCs to create
@@ -39,8 +50,9 @@
       #  vars:
       #    jmesquery: 'vpcs[*].name'
 
+      # Do a query using jmesquery
       #- name: VPCs to be created by type
-      #  debug: msg="{{ jsondata | json_query(jmesquery) }}"
+      #  debug: msg="{{ varData | json_query(jmesquery) }}"
       #  vars:
       #    jmesquery: 'vpcs[*].name'
 
