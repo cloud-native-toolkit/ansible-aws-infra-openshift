@@ -126,28 +126,31 @@
                         <mxPoint x="215" y="140" as="targetPoint"/>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="49" value="10.1.10.1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontColor=#FF9933;" vertex="1" parent="4">
+                <mxCell id="49" value="10.1.10.1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontColor=#FF9933;" parent="4" vertex="1">
                     <mxGeometry x="424" y="472" width="60" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="57" value="3.239.62.237" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="4">
+                    <mxGeometry x="354" y="340" width="60" height="30" as="geometry"/>
                 </mxCell>
                 <object label="Comments" id="51">
                     <mxCell parent="0"/>
                 </object>
-                <mxCell id="52" value="Public IP assigned by&amp;nbsp;&lt;br&gt;AWS at instance start (changes on instance restart)" style="rounded=0;whiteSpace=wrap;html=1;fontColor=#FF3333;strokeColor=#FF0000;" vertex="1" parent="51">
+                <mxCell id="52" value="Public IP assigned by&amp;nbsp;&lt;br&gt;AWS at instance start (changes on instance restart)" style="rounded=0;whiteSpace=wrap;html=1;fontColor=#FF3333;strokeColor=#FF0000;" parent="51" vertex="1">
                     <mxGeometry x="480" y="90" width="180" height="70" as="geometry"/>
                 </mxCell>
-                <mxCell id="53" value="Security on this network port&amp;nbsp;&lt;br&gt;allows access from IP 1.157.203.199 &amp;amp; allows outbound via internet gateway" style="rounded=0;whiteSpace=wrap;html=1;fontColor=#FF3333;strokeColor=#FF0000;" vertex="1" parent="51">
+                <mxCell id="53" value="Security on this network port&amp;nbsp;&lt;br&gt;allows access from IP 1.157.203.199 &amp;amp; allows outbound via internet gateway" style="rounded=0;whiteSpace=wrap;html=1;fontColor=#FF3333;strokeColor=#FF0000;" parent="51" vertex="1">
                     <mxGeometry x="560" y="210" width="170" height="80" as="geometry"/>
                 </mxCell>
-                <mxCell id="54" value="" style="endArrow=classic;html=1;fontColor=#FF3333;strokeColor=#FF0000;strokeWidth=1;exitX=0.459;exitY=0.988;exitDx=0;exitDy=0;exitPerimeter=0;" edge="1" parent="51" source="53">
+                <mxCell id="54" value="" style="endArrow=classic;html=1;fontColor=#FF3333;strokeColor=#FF0000;strokeWidth=1;exitX=0.459;exitY=0.988;exitDx=0;exitDy=0;exitPerimeter=0;" parent="51" source="53" edge="1">
                     <mxGeometry width="50" height="50" relative="1" as="geometry">
                         <mxPoint x="40" y="360" as="sourcePoint"/>
                         <mxPoint x="480" y="520" as="targetPoint"/>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="55" value="" style="endArrow=classic;html=1;fontColor=#FF3333;strokeColor=#FF0000;strokeWidth=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="51" source="52" target="23">
+                <mxCell id="55" value="" style="endArrow=classic;html=1;fontColor=#FF3333;strokeColor=#FF0000;strokeWidth=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.415;entryY=-0.012;entryDx=0;entryDy=0;entryPerimeter=0;" parent="51" source="52" target="2" edge="1">
                     <mxGeometry width="50" height="50" relative="1" as="geometry">
                         <mxPoint x="648.0300000000002" y="299.03999999999996" as="sourcePoint"/>
-                        <mxPoint x="490" y="530" as="targetPoint"/>
+                        <mxPoint x="460" y="330" as="targetPoint"/>
                     </mxGeometry>
                 </mxCell>
             </root>
