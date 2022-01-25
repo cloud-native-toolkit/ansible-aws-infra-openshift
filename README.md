@@ -20,6 +20,10 @@
 
  The [AWS-CLI-cmds readme](AWS-CLI-cmds.md) document contains the key AWS CLI commands that would be utilized for a build. These could be included in an Ansible playbook. Per above, investigating if it is easier to use Ansible command line calls to aws cli or aws modules.
 
+ [Architectural Decisions](ADs.md) document the design decisions made and the rationale for each decision.
+
+ [RAID Log](RAID_Log.md) documents the risks, issues, assumptions and dependencies in the design.
+
  The architectural overview of the environment is as follows:
 
 ![Architecture Overview](./static/FS-Cloud-on-AWS.png)
