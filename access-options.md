@@ -1,6 +1,10 @@
 # Access Options for AWS
 
-This readme goes through options tested to access services deployed in AWS
+This readme goes through options tested to access services deployed in AWS.
+
+## Notes
+
+- AWS Client VPN Endpoints support up to 66,500 connections with 3 subnet backends as in this architecture.
 
 ## Prerequisites
 
@@ -83,6 +87,10 @@ This method uses mutual authentication via RSA certificates. Other options inclu
     ![Uploaded certificates](./static/uploaded-certificates.png)
 
 1. Create a VPN endpoint
+
+Note that the client CIDR is the pool from which IP addresses are assigned for incoming clients. This is the IP address that it appears the client is attached to when viewed from the AWS VPC subnet. It needs to be between a /12 and /22 netmask and it should not overlap with the subnets in the VPC that it is going to connect to.
+
+A split tunnel VPN should be enabled for most production scenarios to only direct traffic from the client that is destined for the AWS region over the VPN link. Doing so does require the route table to be created with all the relevant routes for the customer's AWS environment.
 
 ![VPN Endpoint Creation](./static/create-vpn-endpoint.png)
 
