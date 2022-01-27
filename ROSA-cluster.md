@@ -43,6 +43,14 @@ This guide goes through how to deploy a custom Red Hat OpenShift on AWS (ROSA) c
 
     This will ask a number of questions to customize the build. 
 
+## Default cluster configuration
+
+If a cluster is deployed in automatic mode it creates its own VPC and deploys into that VPC per the following architecture overview. It is split across 2 subnets. An internet gateway is configured for the VPC.
+A NAT gateway is configured on the public subnet for IPv6 traffic.
+A VPC endpoint is created for access to AWS services from either the private or public IP subnets.
+
+![Default ROSA Cluster](./static/default-rosa.png)
+
 ## References
 Instructions - [https://console.redhat.com/openshift/create/rosa/welcome](https://console.redhat.com/openshift/create/rosa/welcome)
 AWS Prerequisite Details - [https://docs.openshift.com/rosa/rosa_getting_started/rosa-aws-prereqs.html](https://docs.openshift.com/rosa/rosa_getting_started/rosa-aws-prereqs.html)

@@ -4,6 +4,7 @@
   
   - name: Parse JSON File
     hosts: localhost
+    gather_facts: no
 
     vars:
       varData: "{{ lookup('file', './test-vars.json') | from_json }}"
@@ -26,18 +27,36 @@
         debug:
           msg: "{{item.VpcId}}"
         loop: "{{vpcData.Vpcs}}"
-        when: "item.State =='available'"
+        when: "item.IsDefault == false"
 
-      - name: Display list of VPC id and names
+      - name: Display VPCs with tags
         debug:
-          msg: "{{ item | combine(item.VpcId, item.Tags.Value) }}"
-        loop: "{{ vpcData.Vpcs }}"
+          msg: "VPC Tags are {{item.Tags}}"
+        loop: "{{vpcData.Vpcs}}"
+        when: 
+          - ("Tags" in item)
+          - (item.Tags[0].Key == "Name")
+          # - (item.Tags[0].Value == "fs-cloud-edge-vpc")
+
+      - name: Find edge VPC
+        debug:
+          msg: "Edge VPC is {{item.VpcId}}"
+        loop: "{{vpcData.Vpcs}}"
+        when: 
+          - ("Tags" in item)
+          - (item.Tags[0].Key == "Name")
+          - (item.Tags[0].Value == "fs-cloud-edge-vpc")
+
+      #- name: Display list of VPC id and names
+      #  debug:
+      #    msg: "{{ item | combine(item.VpcId, item.Tags.Value) }}"
+      #  loop: "{{ vpcData.Vpcs }}"
           
-      - name: Get edge VPC id
-        set_fact:
-          edge_vpc_id: "{{ vpcData | json_query(query) }}"
-        vars:
-          query: "vpcData.Vpcs.[?Tags.Value.contains(@, 'fs-cloud-mgmt-vpc')].VpcId"
+      #- name: Get edge VPC id
+      #  set_fact:
+      #    edge_vpc_id: "{{ vpcData | json_query(query) }}"
+      #  vars:
+      #    query: "vpcData.Vpcs.[?Tags.Value.contains(@, 'fs-cloud-mgmt-vpc')].VpcId"
 
       #- name: Display VPCs to be utilized
       #  debug:
