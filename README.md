@@ -8,6 +8,8 @@
 
  Currently working on the network elements to determine how to emulate the FS Cloud security features in AWS, including Network ACLs, Security Groups, multiple VPCs, routing tables, internet gateways, VPN endpoints and so forth.
 
+ The [ansible build steps](ansible-steps.md) readme contains the tasks followed by ansible to create the FS Cloud environment on AWS.
+
  The [inventory.yaml](inventory.yaml) file represents the components and example variables of the required cloud environment. My own notes on what parameters were needed for each component. This will be migrated into the variables.json file.
 
  The [variables.json](variables.json) file represents the variables of a particular build as input to automation and a more formal way of capturing the parameters. Read by Ansible.
@@ -34,6 +36,4 @@ Install AWS CLI [https://aws.amazon.com/cli/](https://aws.amazon.com/cli/)
 
 AWS CLI reference [https://awscli.amazonaws.com/v2/documentation/api/latest/reference/ec2/index.html](https://awscli.amazonaws.com/v2/documentation/api/latest/reference/ec2/index.html)
 
-A subset of the CLI reference is documented in this repository [here](AWS-CLI-cmds.md) for the relevant commands and syntax to build the cloud.
-
-Ansible CLI module reference (amazon.aws) [https://docs.ansible.com/ansible/latest/collections/amazon/aws/index.html](https://docs.ansible.com/ansible/latest/collections/amazon/aws/index.html)
+Ansible module reference (amazon.aws) [https://docs.ansible.com/ansible/latest/collections/amazon/aws/index.html](https://docs.ansible.com/ansible/latest/collections/amazon/aws/index.html)

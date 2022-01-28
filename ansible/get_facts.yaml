@@ -18,4 +18,4 @@
         delegate_to: localhost
     
     - debug: 
-        msg: "Edge VPC id is {{my_vpcs}}"
+        msg: "Edge VPC id is {{my_vpcs.vpcs[0].vpc_id}}"

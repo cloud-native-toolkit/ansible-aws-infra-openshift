@@ -7,33 +7,35 @@ General
 
 1. Create AWS account
 
-1. Create VPCs
+1. Create Edge VPCs
 
-    For each the the required VPC's (edge, management and workload)
+    Only the Edge VPC needs to be created. The management and workload VPC's are created as part of the ROSA cluster deployment.
+
     1. [Create Edge VPC](AWS-CLI-cmds.md#vpc-creation)
     1. [Add CIDRs](AWS-CLI-cmds.md#Associate-additional-CIDRs-to-VPC)
 
 1. Create Network ACLs
 
     For each network ACL, create the ACL and then assign the required rules.
+
     1. [Create Network ACL](AWS-CLI-cmds.md#create-network-acl)
     1. [Add rule to network ACL](AWS-CLI-cmds.md#add-rule-to-network-acl)
 
-1. Create Subnets
+1. Create Edge VPC Subnets
     1. [Create subnet](AWS-CLI-cmds.md#create-subnet)
     1. Get existing network ACL association
     1. [Assign Network ACL to subnet](AWS-CLI-cmds.md#change-subnet-acl-association)
 
 1. Create security groups
 
-1. Create Internet Gateways
+1. Create Internet Gateway
 
     For each required gateway
     1. Create fixed IP addresses for incoming connections
     1. [Create Internet Gateway](AWS-CLI-cmds.md#create-internet-gateway)
     1. [Associate gateway with VPC](AWS-CLI-cmds.md#associate-gateway)
     1. Create elastic IP allocations for NAT gateways
-    1. Create NAT gateway for egress only
+    1. Create NAT gateway for egress only subnet
 
 1. Create VPC Peers
 
@@ -46,8 +48,6 @@ General
 
 1. Create VPC Endpoints
     VPC Endpoints allow connection from AWS services to each VPC.
-
-1. Create Route 53 domain name servers for private DNS
 
 1. Create Red Hat OpenShift on AWS Clusters
     [ROSA Instructions](ROSA-cluster.md)

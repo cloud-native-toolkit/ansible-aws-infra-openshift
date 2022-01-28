@@ -131,6 +131,14 @@ For this example, a separate VM on the same network as the configuration Mac was
 
     ![Connection to instance via VPN](./static/instance-connection-via-vpn.png)
 
+## Option 3. Red Hat OpenShift on AWS (ROSA)
+
+When a ROSA cluster is deployed in default rather than AWS PrivateLink configuration, there are two internet connections.
+
+The first connection is for outbound connectivity by the cluster through a NAT gateway. This supports the creation of the cluster, updates to the cluster and reporting to the Red Hat website.
+
+The second connection is for inbound connectivity to the OpenShift console and to worker nodes. Both of these are managed through load balancers. The worker node connectivity occurs through the infra nodes.
+
 
 ## References
 
