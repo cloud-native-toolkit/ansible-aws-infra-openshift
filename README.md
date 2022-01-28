@@ -30,6 +30,10 @@
 
 ![Architecture Overview](./static/FS-Cloud-on-AWS.png)
 
+Further details of the Management and Workload VPCs are per the following architecture overview:
+
+![ROSA Multi AZ Overview](./static/multi-az-rosa.png)
+
 ## References
 
 Install AWS CLI [https://aws.amazon.com/cli/](https://aws.amazon.com/cli/)
