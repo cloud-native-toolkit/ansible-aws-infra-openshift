@@ -39,13 +39,16 @@ This guide goes through how to deploy a custom Red Hat OpenShift on AWS (ROSA) c
 
 1. Deploy a cluster
     
-        $ rosa create cluster --interactive --sts
-
-    This will ask a number of questions to customize the build. 
+    There are 3 main different configuration options for this. The first is a simple single availability zone cluster. The second a cluster that is split across multiple availability zones within the same region for improved availability. And the last is a privatelink option for either of the prior two options. These options are explored in more detail in the subsequent sections.
 
 ## Single-AZ cluster configuration
 
 If a cluster is deployed in automatic mode it creates its own VPC and deploys into that VPC per the following architecture overview. It is split across 2 subnets. An internet gateway is configured for the VPC.
+
+        $ rosa create cluster --cluster-name <cluster-name> --sts --mode auto --yes
+where
+- "cluster-name" is the name of the cluster to be created
+
 A NAT gateway is configured on the public subnet for IPv6 traffic.
 A VPC endpoint is created for access to AWS services from either the private or public IP subnets.
 
@@ -57,14 +60,14 @@ Creates its own VPC which can be later renamed and used for our purposes.
 
 Command line to create cluster:
 
-        rosa create cluster --cluster-name fs-test-03 --sts \
+        $ rosa create cluster --cluster-name <cluster-name> --sts \
         --role-arn arn:aws:iam::<AWS_Account_id>:role/ManagedOpenShift-Installer-Role \
         --support-role-arn arn:aws:iam::<AWS_Account_id>:role/ManagedOpenShift-Support-Role \
         --controlplane-iam-role arn:aws:iam::<AWS_Account_id>:role/ManagedOpenShift-ControlPlane-Role \
         --worker-iam-role arn:aws:iam::<AWS_Account_id>:role/ManagedOpenShift-Worker-Role \
-        --operator-roles-prefix fs-test-03-f4z4 \
+        --operator-roles-prefix <cluster-name>-f4z4 \
         --multi-az \
-        --region us-east-1 \
+        --region <region> \
         --version 4.9.15 \
         --compute-nodes 3 \
         --machine-cidr 10.0.0.0/16 \
@@ -72,6 +75,21 @@ Command line to create cluster:
         --pod-cidr 10.128.0.0/14 \
         --host-prefix 23 \
         --etcd-encryption
+
+where:
+- "cluster-name"is the name of the cluster to be created
+- "AWS_Account_id" is the AWS account identification into which the cluster is being implemented
+- "region" is the AWS region (e.g. us-east-1) into which to create the VPC and the cluster
+
+It is possible to customize the other parameters such as the CIDRs if required. In particular, the machine CIDR may need to be changed if this cluster is to be peered with another VPC that shares the same CIDR. The service and pod CIDRs are internal to the OpenShift cluster.
+
+Once the build has started, create the operator roles and OIDC provider in order to proceed with the implementation.
+
+        $ rosa create operator-roles --mode manual --cluster <cluster-name>
+        $ roas create oidc-provider --mode manual --cluster <cluster-name>
+
+where:
+- "cluster-name" is the name of the cluster that is being created.
 
 The end result is a deployment with the following architecture.
 

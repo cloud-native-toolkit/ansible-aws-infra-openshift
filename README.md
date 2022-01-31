@@ -30,7 +30,7 @@
 
 ![Architecture Overview](./static/FS-Cloud-on-AWS.png)
 
-Further details of the Management and Workload VPCs are per the following architecture overview:
+Further details of the Management and Workload VPCs are per the following architecture overview and in the ROSA details [here](./ROSA-cluster.md#Multiple_AZ_cluster_configuration):
 
 ![ROSA Multi AZ Overview](./static/multi-az-rosa.png)
 
