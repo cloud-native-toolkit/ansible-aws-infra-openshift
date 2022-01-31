@@ -77,6 +77,29 @@ The end result is a deployment with the following architecture.
 
 ![ROSA Multi-AZ Deployment Architecture](./static/multi-az-rosa.png)
 
+The following AWS elements are created (these are created with Terraform)
+
+| Element | Description |
+|-------------------------|-------------------------------------------------------------------------------------------------|
+| VPC | A new virtual private cloud is created |
+| Instance profile - Master | Role created to permit OpenShift to execute on the master nodes |
+| Instance profile - Worker | Role created to permit OpenShift to execute on the worker nodes |
+| DHCP Configuration | Configured to assign IP addresses from the 3 private subnets for the OpenShift nodes |
+| Route table - private | Associated with the VPC, subnets, NAT gateways and AWS endpoints |
+| Route table - public | Associated with the VPC subnets, NAT gateways and AWS endpoints  | 
+| Private subnets (x3) | Private subnets are created in three separate availability zones |
+| Security Group - Master | Only allow ports 6443 and 22643 |
+| Security Group - Worker | Only allow ports  |
+| Internet Gateway | An internet gateway is created and associated with the new VPC |
+| Load balancer target group - Internal | The target group for the internal network load balancer |
+| Load balancer target group - External | The target group for the external network load balancer |
+| Load balancer target group - Services | The target group for the classic load balancer |
+| NAT Gateway (x3) | Associated with each private subnet and utilized for access to internet resources (like the Red Hat image repository) |
+| Network Load Balancer - Internal | Associated with the 3 private subnets and the internal load balancer target group. Balances incoming traffic to the master nodes from the private subnets. Forwards ports 6443 and 22643 (API) |
+| Network Load Balancer - External | Associated with the 3 public subnets and the external load balancer target group. Balances incoming traffic to the master nodes from the public subnets. Only forwards port 6443 (console) |
+| Classic Load Balancer | Associated with the 3 public subnets. Forwards traffic to the infra tagged worker nodes on ports 31280 and 31558 |
+| Route 53 | Route 53 DNS is configured for the cluster to allow external access |
+
 ## Privatelink cluster configuration
 
 The default cluster creates its own VPC and associated network components which would need to be modified later for the customer requirements. An alternative is to provision a ROSA cluster into an existing VPC. This is done using the ROSA PrivateLink option during installation.
