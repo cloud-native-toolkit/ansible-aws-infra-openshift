@@ -10,8 +10,8 @@ edge: fs-cloud-edge
 management: fs-cloud-mgmt
 workload: fs-cloud-workload
 
-# Network addresses. Note that these must be at last /18 addresses
-edge_cidr: 10.10.0.0/18
-management_cidr: 10.20.0.0/18
-workload_cidr: 10.30.0.0/18
+# Network addresses. Note that these must be at last /13 addresses and must not overlap
+edge_cidr: 10.1.0.0/13
+management_cidr: 10.10.0.0/13
+workload_cidr: 10.40.0.0/13
 

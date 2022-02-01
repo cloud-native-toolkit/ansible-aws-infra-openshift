@@ -10,10 +10,6 @@
 
  The [ansible build steps](ansible-steps.md) readme contains the tasks followed by ansible to create the FS Cloud environment on AWS.
 
- The [inventory.yaml](inventory.yaml) file represents the components and example variables of the required cloud environment. My own notes on what parameters were needed for each component. This will be migrated into the variables.json file.
-
- The [variables.json](variables.json) file represents the variables of a particular build as input to automation and a more formal way of capturing the parameters. Read by Ansible.
-
  The [build-steps](build-steps.md) readme contains the manual steps using the AWS CLI to create the cloud environment. Will be migrated to Ansible for automation.
 
  The [Access Guide](access-options.md) provides options tested for users to access provisioned servers in the AWS environment.
