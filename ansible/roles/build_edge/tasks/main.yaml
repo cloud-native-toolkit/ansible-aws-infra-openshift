@@ -1,0 +1,13 @@
+---
+
+- name: Create VPC
+  debug: 
+    msg: "Will now build Edge VPC with name {{edge}}-vpc"
+
+- name: Calculate edge subnets
+  script: ../files/network-calc.py {{edge_cidr}}
+  register: cidr
+
+- name: Create edge subnets
+  debug:
+    msg: "Will now create Edge Subnet {{edge}}-private1 with cidr {{cidr.stdout}}"

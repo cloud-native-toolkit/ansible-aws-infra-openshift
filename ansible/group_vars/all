@@ -1,0 +1,17 @@
+---
+
+# Configuration variables for FS Cloud Build
+
+# AWS Account Profile (set up in boto)
+awsProfile: default
+
+# Name tag prefix for the network that will be created
+edge: fs-cloud-edge
+management: fs-cloud-mgmt
+workload: fs-cloud-workload
+
+# Network addresses. Note that these must be at last /18 addresses
+edge_cidr: 10.10.0.0/18
+management_cidr: 10.20.0.0/18
+workload_cidr: 10.30.0.0/18
+
