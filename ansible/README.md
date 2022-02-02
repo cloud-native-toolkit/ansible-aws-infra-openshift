@@ -5,6 +5,7 @@
 ## Prerequisites
 
 1. Setup AWS account Boto profile
+1. Edit the global variables [groups_vars/all](./group_vars/all)
 
 ## References
 

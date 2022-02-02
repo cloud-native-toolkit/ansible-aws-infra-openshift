@@ -6,7 +6,7 @@
  ## DRAFT
  It is currently a work in progress.
 
- Currently working on the network elements to determine how to emulate the FS Cloud security features in AWS, including Network ACLs, Security Groups, multiple VPCs, routing tables, internet gateways, VPN endpoints and so forth.
+ Currently working on the Ansible build automation for the edge VPC cluster. 
 
  The [ansible build steps](ansible-steps.md) readme contains the tasks followed by ansible to create the FS Cloud environment on AWS.
 
