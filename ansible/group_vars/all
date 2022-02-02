@@ -5,13 +5,30 @@
 # AWS Account Profile (set up in boto)
 awsProfile: default
 
-# Name tag prefix for the network that will be created
-edge: fs-cloud-edge
-management: fs-cloud-mgmt
-workload: fs-cloud-workload
+# Region into which to deploy
+awsRegion: us-east-1
 
-# Network addresses. Note that these must be at last /13 addresses and must not overlap
-edge_cidr: 10.1.0.0/13
-management_cidr: 10.10.0.0/13
-workload_cidr: 10.40.0.0/13
+# Availability zones (these must be part of the region previously defined)
+availZone1: us-east-1a
+availZone2: us-east-1b
+availZone3: us-east-1c
+
+# Name tag for the elements that will be created
+envNamePrefix: fs-cloud
+edge: edge
+management: mgmt
+workload: workload
+
+# Network addresses. Note that these must be at least /13 addresses and must not overlap with each other or on site ranges
+edge_cidr: 10.0.0.0/14
+management_cidr: 10.100.0.0/14
+workload_cidr: 10.200.0.0/14
+
+#######
+# Do not change the following variables unless you know what you are doing as these may affect the automation
+#######
+noAvailZones: 3
+availZonePrefix: 16
+subnetPrefix: 24
+
 
