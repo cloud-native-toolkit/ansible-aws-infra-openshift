@@ -1,0 +1,40 @@
+---
+# Returns subnet CIDRs for a VPC consisting of Ingress, Bastion and Egress tiers (refer archtiecture documentation)
+
+# Calculate the edge subnets
+- name: Split VPC CIDR into 3 ACL subnets
+  script: ../files/split-subnet.py --cidr {{vpc_cidr}} --prefix {{availZonePrefix}} --count {{noAvailZones}} 
+  register: cidrReturn
+
+- set_fact:
+    aclSubnets: "{{cidrReturn.stdout_lines}}"
+
+- name: Split ACL subnets into edge ingress, bastion and egress subnets
+  script: ../files/split-subnet.py --cidr {{aclSubnets[0]}} --prefix {{subnetPrefix}} --count {{noAvailZones}}
+  register: cidrReturn
+
+- set_fact:
+    ingressSubnets: "{{cidrReturn.stdout_lines}}"
+
+- script: ../files/split-subnet.py --cidr {{aclSubnets[1]}} --prefix {{subnetPrefix}} --count {{noAvailZones}}
+  register: cidrReturn
+
+- set_fact:
+    bastionSubnets: "{{cidrReturn.stdout_lines}}"
+
+- script: ../files/split-subnet.py --cidr {{aclSubnets[2]}} --prefix {{subnetPrefix}} --count {{noAvailZones}}
+  register: cidrReturn
+
+- set_fact:
+    egressSubnets: "{{cidrReturn.stdout_lines}}"
+
+- name: Display created subnets
+  debug:
+    msg: [
+      "VPC Subnets are : {{aclSubnets}}",
+      "Ingress Subnets are: {{ingressSubnets}}",
+      "Bastion Subnets are: {{bastionSubnets}}",
+      "Egress Subnets are: {{egressSubnets}}"
+    ]
+
+

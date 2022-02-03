@@ -1,7 +1,6 @@
 ---
 
 - hosts: localhost
-
   roles:
-    - calc_edge_subnets
     - build_edge_vpc
+    

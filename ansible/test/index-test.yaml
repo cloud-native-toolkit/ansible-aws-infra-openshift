@@ -1,0 +1,26 @@
+---
+
+- name: Test of index looping
+  hosts: localhost
+  gather_facts: no
+
+  tasks:
+    - name: Count index
+      debug:
+        msg: [
+          "{{ item }} with index {{ my_index }}"
+        ]
+      loop:
+        - apple
+        - banana
+        - pear
+      loop_control:
+        index_var: my_index
+
+    - name: Echo to output
+      command: echo "Hello world"
+      register: command_output
+
+    - name: Display output
+      debug:
+        msg: "{{command_output.stdout_lines}}"

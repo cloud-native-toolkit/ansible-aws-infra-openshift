@@ -1,69 +1,103 @@
 ---
+####
+# Determine the CIDR for each of the subnets based upon the VPC CIDR
+- name: Calculate required subnet CIDR blocks
+  import_role: 
+    name: calc_subnets
+  vars:
+    vpc_cidr: "{{edge_cidr}}"
+    noAvailZones: "{{availZones | length}}"
+    availZonePrefix: "{{edgeTierPrefix}}"
+    subnetPrefix: "{{edgeSubnetPrefix}}"
 
-# Confirm proceed with build
-- name: Prompt to proceed
-  pause:
-    prompt: "Presss return to continue or Ctrl-C and then a to abort."
-
-# Now start to create the network elements
-- name: Create VPC
-  amazon.aws.ec2_vpc_net:
-    name: "{{envNamePrefix}}-{{edge}}-vpc"
-    cidr_block: "{{azSubnets}}"
+###
+# Create the VPC if it does not already exist
+- name: Check if VPC already exists
+  amazon.aws.ec2_vpc_net_info:
+    profile: "{{awsProfile}}"
     region: "{{awsRegion}}"
-    profile: "{{awsProfile}}"
-    tags:
-      environment: "{{envNamePrefix}}"
-    tenancy: default
-  register: edgeVpc
+    filters:
+      "tag:Name": "{{envNamePrefix}}-{{edge}}-vpc"
+  register: returnedInfo
 
-- name: Create security group
+- name: Set exists if VPC found
+  set_fact:
+    vpcExists: True
+  when: returnedInfo.vpcs|length > 0
+
+- name: Set exists false if VPC not found
+  set_fact:
+    vpcExists: False
+  when: returnedInfo.vpcs|length == 0
+
+- name: Fail build if more than one VPC returned
+  fail:
+    msg: [
+      "ERROR: Found more than one existing VPC with name {{envNamePrefix}}-{{edge}}-vpc",
+      "Please correct and retry"
+    ]
+  when: returnedInfo.vpcs|length > 1
+
+- name: Set Edge VPC info to that already created
+  set_fact:
+    edgeVpc: "{{returnedInfo.vpcs[0]}}"
+  when: vpcExists
+
+- name: Create edge VPC
+  import_role:
+    name: create_vpc
+  vars:
+    # These variable are defined in the global_vars file
+    envName: "{{envNamePrefix}}"
+    vpcName: "{{edge}}"
+    usrProfile: "{{awsProfile}}"
+    reqRegion: "{{awsRegion}}"
+    # The cidr_block is obtained from the earlier subnet calcs
+    cidr_block: "{{aclSubnets}}"
+  when: not vpcExists
+
+- name: Set facts of created VPC
+  set_fact:
+    edgeVpc: "{{vpcData.vpc}}"
+  when: not vpcExists
+
+- name: Display VPC id
   debug:
-    msg: "Will create a default security group"
+    msg: "Edge VPC is {{edgeVpc.id}} for {{envNamePrefix}}-{{edge}}-vpc"
 
-- name: Create edge ingress subnet 1
-  amazon.aws.ec2_vpc_subnet:
-    state: present
-    vpc_id: "{{edgeVpc.vpc.id}}"
-    az: "{{availZone1}}"
-    cidr: "{{ingressSubnets[0]}}"
-    profile: "{{awsProfile}}"
-    tags:
-      environment: "{{envNamePrefix}}"
-  register: edgeIngressSubnetaz1
+###
+# Create the subnets
 
-- name: Create edge ingress subnet 2
+##
+# Ingress subnets
+
+# Create a dictionary of subnets to create
+- name: Create dictionary of ingress subnets to be created
+  set_fact:
+    subnetData: "{{ subnetData | default([]) + [{ 'Name': edge+'-ingress'+loop_index|string, 'CIDR': item, 'AZ': availZones[loop_index], 'Exists': False }] }}"
+  loop: "{{ingressSubnets}}"
+  loop_control:
+    index_var: loop_index
+
+- name: Check if ingress subnets already exist
+  amazon.aws.ec2_vpc_subnet_info:
+    filters: 
+      vpc-id: "{{edgeVpc.id}}"
+      "tag:Name": "{{item.Name}}"
+  loop: "{{ subnetData }}"
+  register: subnet_info
+
+################## DEBUG (TO BE REMOVED)
+- name: Display returned info
   debug:
-    msg: "Will now create Edge Subnet {{edge}}-ingress02 with cidr {{ingressSubnets[1]}} in AZ {{availZone2}}"
+    msg: [
+      "Returned info from query is {{subnet_info.results}}"
+    ]
 
-- name: Create edge ingress subnet 3
-  debug:
-    msg: "Will now create Edge Subnet {{edge}}-ingress03 with cidr {{ingressSubnets[2]}} in AZ {{availZone3}}"
+# Go through returned values to determine which already exist and then modify flag in dict to reflect
 
-- name: Create edge bastion subnet 1
-  debug:
-    msg: "Will now create Edge Subnet {{edge}}-bastion01 with cidr {{bastionSubnets[0]}} in AZ {{availZone1}}"
+# Create Missing Subnets
 
-- name: Create edge bastion subnet 2
-  debug:
-    msg: "Will now create Edge Subnet {{edge}}-bastion02 with cidr {{bastionSubnets[1]}} in AZ {{availZone2}}"
+# Create route tables
 
-- name: Create edge bastion subnet 3
-  debug:
-    msg: "Will now create Edge Subnet {{edge}}-bastion03 with cidr {{bastionSubnets[2]}} in AZ {{availZone3}}"
-
-- name: Create edge egress subnet 1
-  debug:
-    msg: "Will now create Edge Subnet {{edge}}-egress01 with cidr {{egressSubnets[0]}} in AZ {{availZone1}}"
-
-- name: Create edge egress subnet 2
-  debug:
-    msg: "Will now create Edge Subnet {{edge}}-egress02 with cidr {{egressSubnets[1]}}in AZ {{availZone2}}"
-
-- name: Create edge egress subnet 3
-  debug:
-    msg: "Will now create Edge Subnet {{edge}}-egress03 with cidr {{egressSubnets[2]}} in AZ {{availZone3}}"
-
-- name: Create route tables
-  debug:
-    msg: "Will create the route tables"
+# Associate route tables with subnets

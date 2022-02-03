@@ -9,9 +9,10 @@ awsProfile: default
 awsRegion: us-east-1
 
 # Availability zones (these must be part of the region previously defined)
-availZone1: us-east-1a
-availZone2: us-east-1b
-availZone3: us-east-1c
+availZones:
+  - 'us-east-1a'
+  - 'us-east-1b'
+  - 'us-east-1c'
 
 # Name tag for the elements that will be created
 envNamePrefix: fs-cloud
@@ -23,6 +24,10 @@ workload: workload
 edge_cidr: 10.0.0.0/14
 management_cidr: 10.100.0.0/14
 workload_cidr: 10.200.0.0/14
+
+# The next values are the network prefixes for the tier (ingress, bastion, egress) and individual subnet within those tiers
+edgeTierPrefix: 16
+edgeSubnetPrefix: 24
 
 #######
 # Do not change the following variables unless you know what you are doing as these may affect the automation
