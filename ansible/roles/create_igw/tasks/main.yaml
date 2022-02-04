@@ -1,0 +1,42 @@
+---
+
+- name: Determine if using default region
+  set_fact:
+    defaultRegion: True
+  when: (reqRegion is not defined) or (reqRegion|length == 0)
+
+- name: Determine if using specified region
+  set_fact:
+    defaultRegion: False
+  when: (reqRegion is defined) and (reqRegion|length > 0)
+
+- name: Create AWS Internet Gateway with specified region
+  amazon.aws.ec2_vpc_igw:
+    vpc_id: "{{vpcId}}"
+    region: "{{reqRegion}}"
+    profile: "{{usrProfile}}"
+    state: present
+    tags:
+      Name: "{{igwName}}"
+  register: returnedInfo_region
+  when: not defaultRegion
+
+- name: Create AWS Internet Gateway with default region
+  amazon.aws.ec2_vpc_igw:
+    vpc_id: "{{vpcId}}"
+    profile: "{{usrProfile}}"
+    state: present
+    tags:
+      Name: "{{igwName}}"
+  register: returnedInfo_default
+  when: defaultRegion
+
+- name: Set igwReturnedInfo to default if using default region
+  set_fact:
+    igwReturnedInfo: "{{returnedInfo_default}}"
+  when: defaultRegion
+
+- name: Set igwReturnedInfo to specified if using specified region
+  set_fact:
+    igwReturnedInfo: "{{returnedInfo_region}}"
+  when: not defaultRegion

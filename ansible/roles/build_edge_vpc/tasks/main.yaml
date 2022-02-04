@@ -68,36 +68,241 @@
 ###
 # Create the subnets
 
-##
-# Ingress subnets
-
-# Create a dictionary of subnets to create
+# Create a dictionary of subnets to create and add an Exists flag set to false initially (will be updated when AWS queried)
 - name: Create dictionary of ingress subnets to be created
   set_fact:
-    subnetData: "{{ subnetData | default([]) + [{ 'Name': edge+'-ingress'+loop_index|string, 'CIDR': item, 'AZ': availZones[loop_index], 'Exists': False }] }}"
+    subnetDict: "{{ subnetDict | default([]) + [{ 'Name': edge+'-ingress'+loop_index|string, 'CIDR': item, 'AZ': availZones[loop_index], 'Create':'True' }] }}"
   loop: "{{ingressSubnets}}"
   loop_control:
     index_var: loop_index
 
-- name: Check if ingress subnets already exist
+- name: Add bastion subnets to dictionary
+  set_fact:
+    subnetDict: "{{ subnetDict | default([]) + [{ 'Name': edge+'-bastion'+loop_index|string, 'CIDR': item, 'AZ': availZones[loop_index], 'Create':'True' }] }}"
+  loop: "{{bastionSubnets}}"
+  loop_control:
+    index_var: loop_index
+
+- name: Add egress subnets to dictionary
+  set_fact:
+    subnetDict: "{{ subnetDict | default([]) + [{ 'Name': edge+'-egress'+loop_index|string, 'CIDR': item, 'AZ': availZones[loop_index], 'Create':'True' }] }}"
+  loop: "{{egressSubnets}}"
+  loop_control:
+    index_var: loop_index
+
+# Query AWS about each subnet based upon the VPC id and name
+- name: Query AWS for existence of subnets
   amazon.aws.ec2_vpc_subnet_info:
     filters: 
       vpc-id: "{{edgeVpc.id}}"
       "tag:Name": "{{item.Name}}"
-  loop: "{{ subnetData }}"
+  loop: "{{ subnetDict }}"
   register: subnet_info
 
-################## DEBUG (TO BE REMOVED)
-- name: Display returned info
-  debug:
-    msg: [
-      "Returned info from query is {{subnet_info.results}}"
-    ]
-
 # Go through returned values to determine which already exist and then modify flag in dict to reflect
+- name: Parse returned data from AWS to determine subnet existance and create new list of subnet data
+  set_fact:
+    update_list: "{{ update_list + update }}"
+    updated: True
+  when: subnet_info.results[idx].subnets | length > 0
+  loop: "{{subnetDict}}"
+  loop_control:
+    index_var: idx
+  vars:
+    update_list: []
+    update:
+    - path: subnetDict[{{ idx }}].Create
+      value: False
+
+- name: Create updated subnet information if it is changed
+  ansible.utils.update_fact:
+    updates: "{{ update_list }}"
+  when: (updated is defined)
+  register: updatedDict
+
+- name: Replace existing subnet information if it is changed
+  set_fact:
+    subnetDict: "{{ updatedDict.subnetDict }}"
+  when: (updated is defined)
 
 # Create Missing Subnets
+- name: Create missing subnets in VPC
+  include_role: 
+    name: create_subnet
+  vars:
+    vpcId: "{{ edgeVpc.id }}"
+    cidr: "{{ item.CIDR }}"
+    reqAZ: "{{ item.AZ }}"
+    subnetName: "{{item.Name}}"
+    usrProfile: "{{awsProfile}}"
+    reqRegion: "{{awsRegion}}"
+  when: item.Create
+  loop: "{{subnetDict}}"
 
-# Create route tables
+# Append subnet id's to the subnet dictionary
+- name: Query all subnets
+  amazon.aws.ec2_vpc_subnet_info:
+    filters: 
+      vpc-id: "{{edgeVpc.id}}"
+      "tag:Name": "{{item.Name}}"
+  loop: "{{ subnetDict }}"
+  register: subnet_info
 
-# Associate route tables with subnets
+- name: Parse returned data from AWS to determine subnet existance and create new list of subnet data
+  set_fact:
+    update_list: "{{ update_list + update }}"
+    updated: True
+  when: subnet_info.results[idx].subnets | length > 0
+  loop: "{{subnetDict}}"
+  loop_control:
+    index_var: idx
+  vars:
+    update_list: []
+    update:
+    - path: subnetDict[{{ idx }}].subnet_id
+      value: "{{ subnet_info.results[idx].subnets[0].id }}"
+
+- name: Create updated subnet information if it is changed
+  ansible.utils.update_fact:
+    updates: "{{ update_list }}"
+  when: (updated is defined)
+  register: updatedDict
+
+- name: Replace existing subnet information if it is changed
+  set_fact:
+    subnetDict: "{{ updatedDict.subnetDict }}"
+  when: (updated is defined)
+
+###
+# Create the internet gateway
+
+# Check if Internet Gateway exists
+- name: Check if IGW exists
+  amazon.aws.ec2_vpc_igw_info:
+    region: "{{awsRegion}}"
+    profile: "{{awsProfile}}"
+    filters: 
+      "tag:Name": "{{envNamePrefix}}-{{edge}}-igw"
+  register: igwReturnedInfo
+
+- name: Set flag if IGW found
+  set_fact:
+    igwExists: True
+  when: igwReturnedInfo.internet_gateways|length > 0
+
+- name: Set flag to false if IGW not found
+  set_fact:
+    igwExists: False
+  when: igwReturnedInfo.internet_gateways|length == 0
+
+# Create Internet Gateway if it does not already exist
+- name: Create the internet gateway
+  import_role:
+    name: create_igw
+  vars:
+    vpcId: "{{ edgeVpc.id }}"
+    igwName: "{{envNamePrefix}}-{{edge}}-igw"
+    usrProfile: "{{awsProfile}}"
+    reqRegion: "{{awsRegion}}"
+  when: not igwExists
+
+- name: Append internet gateway id to the vpc dictionary information (already exists)
+  set_fact:
+    edgeVpc: "{{ edgeVpc | combine({'igw_id':igwID}) }}"
+  vars:
+    igwID: "{{igwReturnedInfo.internet_gateways[0].internet_gateway_id}}"
+  when: igwExists
+  
+- name: Append internet gateway id to the vpc dictionary information (just created)
+  set_fact:
+    edgeVpc: "{{ edgeVpc | combine({'igw_id':igwID}) }}"
+  vars:
+    igwID: "{{igwReturnedInfo.gateway_id}}"
+  when: not igwExists
+
+###
+# Create NAT Gateways for egress subnets
+
+- name: Generate list of NAT gateways to create
+  set_fact:
+    natGWDict: "{{natGWDict | default([]) + [{'Name':envNamePrefix+'-'+item.Name+'-ngw','Subnet_id':item.subnet_id,'Create':'True'}] }}"
+  when: '"egress" in item.Name'
+  loop: "{{subnetDict}}"
+
+- name: Query AWS for existance of NAT gateways
+  amazon.aws.ec2_vpc_nat_gateway_info:
+    region: "{{awsRegion}}"
+    profile: "{{awsProfile}}"
+    filters:
+      subnet-id: "{{item.Subnet_id}}"
+  loop: "{{natGWDict}}"
+  register: natGWReturnedInfo
+
+- name: Parse returned data from AWS to determine NAT gateway existance and create new list of NAT gateway data
+  set_fact:
+    update_list: "{{ update_list + update }}"
+    updated: True
+  when: natGWReturnedInfo.results[idx].result | length > 0
+  loop: "{{natGWDict}}"
+  loop_control:
+    index_var: idx
+  vars:
+    update_list: []
+    update:
+    - path: natGWDict[{{ idx }}].Create
+      value: False
+
+- name: Create updated subnet information if it is changed
+  ansible.utils.update_fact:
+    updates: "{{ update_list }}"
+  when: (updated is defined)
+  register: updatedDict
+
+- name: Replace existing subnet information if it is changed
+  set_fact:
+    natGWDict: "{{ updatedDict.natGWDict }}"
+  when: (updated is defined)
+
+- name: Create NAT gateways and attach to egress subnets
+  include_role:
+    name: create_nat_gw
+  vars:
+    subnetId: "{{item.subnet_id}}"
+    region: "{{awsRegion}}"
+    profile: "{{awsProfile}}"
+    ngwName: "{{item.Name}}"
+  when: item.Create
+  loop: "{{ natGWDict }}"
+
+# Read in NAT gateway details and append to dictionary of NAT Gateways
+
+- name: Query AWS for NAT gateway details
+  amazon.aws.ec2_vpc_nat_gateway_info:
+    region: "{{awsRegion}}"
+    profile: "{{awsProfile}}"
+    filters:
+      subnet-id: "{{item.Subnet_id}}"
+  loop: "{{natGWDict}}"
+  register: natGWReturnedInfo
+
+- name: Parse NAT Gateway information and populate new dictionary
+  set_fact:
+    newDict: "{{ newDict | default([]) + [{ 'Name':item.Name,'Subnet_id':item.Subnet_id,'Private_IP':private_ip, 'NAT_GW_id':gw_id }] }}"
+  vars:
+    private_ip: "{{ natGWReturnedInfo.results[idx].result[0].nat_gateway_addresses[0].private_ip }}"
+    gw_id: "{{ natGWReturnedInfo.results[idx].result[0].nat_gateway_id }}"
+  loop: "{{natGWDict}}"
+  loop_control: 
+    index_var: idx
+
+- name: Replace existing NAT gateway dictionary with new one containing created gateway details
+  set_fact:
+    natGWDict: "{{newDict}}"
+
+- debug:
+    msg: "natGWDict = {{natGWDict}}"
+
+# Create Network ACLs for each zone
+# Assign new Network ACLs to each zone
+# Modify route tables for each subnet
+

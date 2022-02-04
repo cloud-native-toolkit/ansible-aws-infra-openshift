@@ -1,12 +1,12 @@
 ---
 
 
-- name: Determine if using default region for profile
+- name: Determine if using default region
   set_fact:
     defaultRegion: True
   when: (reqRegion is not defined) or (reqRegion|length == 0) 
 
-- name: Determine if using specified region for profile
+- name: Determine if using specified region
   set_fact:
     defaultRegion: False
   when: (reqRegion is defined) and (reqRegion|length > 0) 

@@ -1,0 +1,154 @@
+{
+    "results": [
+        {
+            "result": [
+                {
+                    "create_time": "2022-02-04T04:16:16+00:00",
+                    "nat_gateway_addresses": [
+                        {
+                            "allocation_id": "eipalloc-0bac9b67c7c67c235",
+                            "network_interface_id": "eni-02e1f09ea7c13475e",
+                            "private_ip": "10.2.0.108",
+                            "public_ip": "34.192.160.44"
+                        }
+                    ],
+                    "nat_gateway_id": "nat-0e96f596dedb3ebc3",
+                    "state": "available",
+                    "subnet_id": "subnet-06042c50307861f5e",
+                    "vpc_id": "vpc-0adee1de72c8f3330",
+                    "tags": {
+                        "Name": "fs-cloud-edge-edge-egress0-ngw"
+                    },
+                    "connectivity_type": "public"
+                }
+            ],
+            "invocation": {
+                "module_args": {
+                    "region": "us-east-1",
+                    "filters": {
+                        "subnet-id": "subnet-06042c50307861f5e"
+                    },
+                    "debug_botocore_endpoint_logs": False,
+                    "validate_certs": True,
+                    "nat_gateway_ids": [],
+                    "ec2_url": None,
+                    "aws_access_key": None,
+                    "aws_secret_key": None,
+                    "security_token": None,
+                    "aws_ca_bundle": None,
+                    "profile": None,
+                    "aws_config": None
+                }
+            },
+            "failed": False,
+            "changed": False,
+            "item": {
+                "Name": "fs-cloud-edge-egress0-ngw",
+                "Subnet_id": "subnet-06042c50307861f5e",
+                "Create": False
+            },
+            "ansible_loop_var": "item"
+        },
+        {
+            "result": [
+                {
+                    "create_time": "2022-02-04T04:17:57+00:00",
+                    "nat_gateway_addresses": [
+                        {
+                            "allocation_id": "eipalloc-093514b03a9204ea4",
+                            "network_interface_id": "eni-04b299ce7a2597f79",
+                            "private_ip": "10.2.1.39",
+                            "public_ip": "34.235.71.219"
+                        }
+                    ],
+                    "nat_gateway_id": "nat-06ceafc9113134bab",
+                    "state": "available",
+                    "subnet_id": "subnet-0017472a9b922a019",
+                    "vpc_id": "vpc-0adee1de72c8f3330",
+                    "tags": {
+                        "Name": "fs-cloud-edge-edge-egress1-ngw"
+                    },
+                    "connectivity_type": "public"
+                }
+            ],
+            "invocation": {
+                "module_args": {
+                    "region": "us-east-1",
+                    "filters": {
+                        "subnet-id": "subnet-0017472a9b922a019"
+                    },
+                    "debug_botocore_endpoint_logs": False,
+                    "validate_certs": True,
+                    "nat_gateway_ids": [],
+                    "ec2_url": None,
+                    "aws_access_key": None,
+                    "aws_secret_key": None,
+                    "security_token": None,
+                    "aws_ca_bundle": None,
+                    "profile": None,
+                    "aws_config": None
+                }
+            },
+            "failed": False,
+            "changed": False,
+            "item": {
+                "Name": "fs-cloud-edge-egress1-ngw",
+                "Subnet_id": "subnet-0017472a9b922a019",
+                "Create": False
+            },
+            "ansible_loop_var": "item"
+        },
+        {
+            "result": [
+                {
+                    "create_time": "2022-02-04T04:20:09+00:00",
+                    "nat_gateway_addresses": [
+                        {
+                            "allocation_id": "eipalloc-04febac32349749c0",
+                            "network_interface_id": "eni-07456f5aa7329fcab",
+                            "private_ip": "10.2.2.38",
+                            "public_ip": "52.6.45.138"
+                        }
+                    ],
+                    "nat_gateway_id": "nat-0f3f7ab0ad3b1bf90",
+                    "state": "available",
+                    "subnet_id": "subnet-0a11add1d312cad27",
+                    "vpc_id": "vpc-0adee1de72c8f3330",
+                    "tags": {
+                        "Name": "fs-cloud-edge-edge-egress2-ngw"
+                    },
+                    "connectivity_type": "public"
+                }
+            ],
+            "invocation": {
+                "module_args": {
+                    "region": "us-east-1",
+                    "filters": {
+                        "subnet-id": "subnet-0a11add1d312cad27"
+                    },
+                    "debug_botocore_endpoint_logs": False,
+                    "validate_certs": True,
+                    "nat_gateway_ids": [],
+                    "ec2_url": None,
+                    "aws_access_key": None,
+                    "aws_secret_key": None,
+                    "security_token": None,
+                    "aws_ca_bundle": None,
+                    "profile": None,
+                    "aws_config": None
+                }
+            },
+            "failed": False,
+            "changed": False,
+            "item": {
+                "Name": "fs-cloud-edge-egress2-ngw",
+                "Subnet_id": "subnet-0a11add1d312cad27",
+                "Create": False
+            },
+            "ansible_loop_var": "item"
+        }
+    ],
+    "skipped": False,
+    "msg": "All items completed",
+    "changed": False
+}

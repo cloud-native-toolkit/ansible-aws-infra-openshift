@@ -1,0 +1,94 @@
+---
+
+- name: Determine if using default region
+  set_fact:
+    defaultRegion: True
+  when: (reqRegion is not defined) or (reqRegion|length == 0)
+
+- name: Determine if using specified region
+  set_fact:
+    defaultRegion: False
+  when: (reqRegion is defined) and (reqRegion|length > 0)
+
+- name: Determine if using default availability zone
+  set_fact: 
+    defaultAZ: True
+  when: (reqAZ is not defined) or (reqAZ|length == 0)
+
+- name: Determine if using specified availability zone
+  set_fact: 
+    defaultAZ: False
+  when: (reqAZ is defined) and (reqAZ|length > 0)
+
+
+- name: Create subnet [AWS] with specified region and AZ
+  amazon.aws.ec2_vpc_subnet:
+    state: present
+    vpc_id: "{{vpcId}}"
+    cidr: "{{cidr}}"
+    az: "{{reqAZ}}"
+    profile: "{{usrProfile}}"
+    region: "{{reqRegion}}"
+    tags:
+      Name: "{{subnetName}}"
+  register: returnedInfo_both
+  tags: subnets
+  when: (not defaultRegion) and (not defaultAZ)
+
+- name: Create subnet [AWS] with default region and AZ
+  amazon.aws.ec2_vpc_subnet:
+    state: present
+    vpc_id: "{{vpcId}}"
+    cidr: "{{cidr}}"
+    profile: "{{usrProfile}}"
+    tags:
+      Name: "{{subnetName}}"
+  register: returnedInfo_none
+  tags: subnets
+  when: (defaultRegion) and (defaultAZ)
+
+- name: Create subnet [AWS] with specified region and default AZ
+  amazon.aws.ec2_vpc_subnet:
+    state: present
+    vpc_id: "{{vpcId}}"
+    cidr: "{{cidr}}"
+    profile: "{{usrProfile}}"
+    region: "{{reqRegion}}"
+    tags:
+      Name: "{{subnetName}}"
+  register: returnedInfo_az
+  tags: subnets
+  when: (not defaultRegion) and (defaultAZ)
+
+- name: Create subnet [AWS] with default region and specified AZ
+  amazon.aws.ec2_vpc_subnet:
+    state: present
+    vpc_id: "{{vpcId}}"
+    cidr: "{{cidr}}"
+    az: "{{reqAZ}}"
+    profile: "{{usrProfile}}"
+    tags:
+      Name: "{{subnetName}}"
+  register: returnedInfo_region
+  tags: subnets
+  when: (defaultRegion) and (not defaultAZ)
+
+- name: Set subnetData to all when both region and AZ specified
+  set_fact:
+    subnetData: "{{ returnedInfo_both }}"
+  when: (not defaultRegion) and (not defaultAZ)
+
+- name: Set subnetData to none when neither region and AZ specified
+  set_fact:
+    subnetData: "{{ returnedInfo_none }}"
+  when: (defaultRegion) and (defaultAZ)
+
+- name: Set subnetData to region when region specified and AZ default
+  set_fact:
+    subnetData: "{{ returnedInfo_region }}"
+  when: (not defaultRegion) and (defaultAZ)
+
+- name: Set subnetData to az when region default and AZ specified
+  set_fact:
+    subnetData: "{{ returnedInfo_region }}"
+  when: (defaultRegion) and (not defaultAZ)
