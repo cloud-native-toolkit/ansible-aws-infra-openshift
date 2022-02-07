@@ -1,0 +1,56 @@
+---
+
+###
+# Create the VPC if it does not already exist
+- name: Check if VPC already exists
+  amazon.aws.ec2_vpc_net_info:
+    profile: "{{awsProfile}}"
+    region: "{{awsRegion}}"
+    filters:
+      "tag:Name": "{{envNamePrefix}}-{{edge}}-vpc"
+  register: returnedInfo
+
+- name: Set exists if VPC found
+  set_fact:
+    vpcExists: True
+  when: returnedInfo.vpcs|length > 0
+
+- name: Set exists false if VPC not found
+  set_fact:
+    vpcExists: False
+  when: returnedInfo.vpcs|length == 0
+
+- name: Fail build if more than one VPC returned
+  fail:
+    msg: [
+      "ERROR: Found more than one existing VPC with name {{envNamePrefix}}-{{edge}}-vpc",
+      "Please correct and retry"
+    ]
+  when: returnedInfo.vpcs|length > 1
+
+- name: Set Edge VPC info to that already created
+  set_fact:
+    edgeVpc: "{{returnedInfo.vpcs[0]}}"
+  when: vpcExists
+
+- name: Create edge VPC
+  import_role:
+    name: create_vpc
+  vars:
+    # These variable are defined in the global_vars file
+    envName: "{{envNamePrefix}}"
+    vpcName: "{{edge}}"
+    usrProfile: "{{awsProfile}}"
+    reqRegion: "{{awsRegion}}"
+    # The cidr_block is obtained from the earlier subnet calcs
+    cidr_block: "{{aclSubnets}}"
+  when: not vpcExists
+
+- name: Set facts of created VPC
+  set_fact:
+    edgeVpc: "{{vpcData.vpc}}"
+  when: not vpcExists
+
+- name: Display VPC id
+  debug:
+    msg: "Edge VPC is {{edgeVpc.id}} for {{envNamePrefix}}-{{edge}}-vpc"

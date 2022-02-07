@@ -2,5 +2,10 @@
 
 - hosts: localhost
   roles:
-    - build_edge_vpc
+    - edge_cidrs
+    - edge_vpc
+    - edge_subnets
+    - edge_igw
+    - edge_nat
+    - edge_nacl
     

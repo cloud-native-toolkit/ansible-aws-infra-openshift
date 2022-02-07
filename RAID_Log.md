@@ -17,6 +17,7 @@
 | IS-03 | What is the equivalent of a Virtual Private Endpoint (VPE) in AWS? | RE | CLOSED |
 | IS-04 | How to automate entry of ROSA parameters like VPC? | RE | OPEN | 
 | IS-05 | Are we able to use community Ansible modules? If so, is there additional open source actions to take? | RE | OPEN |
+| IS-06 | What are the network port requirements between the ingress and bastion tiers? | RE | OPEN |
 
 
 

@@ -1,0 +1,48 @@
+---
+
+###
+# Create the internet gateway
+
+# Check if Internet Gateway exists
+- name: Check if IGW exists
+  amazon.aws.ec2_vpc_igw_info:
+    region: "{{awsRegion}}"
+    profile: "{{awsProfile}}"
+    filters: 
+      "tag:Name": "{{envNamePrefix}}-{{edge}}-igw"
+  register: igwReturnedInfo
+
+- name: Set flag if IGW found
+  set_fact:
+    igwExists: True
+  when: igwReturnedInfo.internet_gateways|length > 0
+
+- name: Set flag to false if IGW not found
+  set_fact:
+    igwExists: False
+  when: igwReturnedInfo.internet_gateways|length == 0
+
+# Create Internet Gateway if it does not already exist
+- name: Create the internet gateway
+  import_role:
+    name: create_igw
+  vars:
+    vpcId: "{{ edgeVpc.id }}"
+    igwName: "{{envNamePrefix}}-{{edge}}-igw"
+    usrProfile: "{{awsProfile}}"
+    reqRegion: "{{awsRegion}}"
+  when: not igwExists
+
+- name: Append internet gateway id to the vpc dictionary information (already exists)
+  set_fact:
+    edgeVpc: "{{ edgeVpc | combine({'igw_id':igwID}) }}"
+  vars:
+    igwID: "{{igwReturnedInfo.internet_gateways[0].internet_gateway_id}}"
+  when: igwExists
+  
+- name: Append internet gateway id to the vpc dictionary information (just created)
+  set_fact:
+    edgeVpc: "{{ edgeVpc | combine({'igw_id':igwID}) }}"
+  vars:
+    igwID: "{{igwReturnedInfo.gateway_id}}"
+  when: not igwExists

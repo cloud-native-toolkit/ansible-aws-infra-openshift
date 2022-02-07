@@ -34,6 +34,8 @@
  - create_vpc : Reusable role to create a VPC with various options
  - create_subnet : Reusable role to create a subnet with various options
 
+ The [networking](networking.md) readme contains details of the network configuration for this setup.
+
  The [ansible build steps](ansible-steps.md) readme contains the tasks followed by ansible to create the FS Cloud environment on AWS.
 
  The [build-steps](build-steps.md) readme contains the manual steps using the AWS CLI to create the cloud environment. Will be migrated to Ansible for automation.

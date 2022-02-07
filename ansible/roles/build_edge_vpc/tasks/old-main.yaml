@@ -71,21 +71,21 @@
 # Create a dictionary of subnets to create and add an Exists flag set to false initially (will be updated when AWS queried)
 - name: Create dictionary of ingress subnets to be created
   set_fact:
-    subnetDict: "{{ subnetDict | default([]) + [{ 'Name': edge+'-ingress'+loop_index|string, 'CIDR': item, 'AZ': availZones[loop_index] }] }}"
+    subnetDict: "{{ subnetDict | default([]) + [{ 'Name': edge+'-ingress'+loop_index|string, 'CIDR': item, 'AZ': availZones[loop_index], 'Create':'True' }] }}"
   loop: "{{ingressSubnets}}"
   loop_control:
     index_var: loop_index
 
 - name: Add bastion subnets to dictionary
   set_fact:
-    subnetDict: "{{ subnetDict | default([]) + [{ 'Name': edge+'-bastion'+loop_index|string, 'CIDR': item, 'AZ': availZones[loop_index] }] }}"
+    subnetDict: "{{ subnetDict | default([]) + [{ 'Name': edge+'-bastion'+loop_index|string, 'CIDR': item, 'AZ': availZones[loop_index], 'Create':'True' }] }}"
   loop: "{{bastionSubnets}}"
   loop_control:
     index_var: loop_index
 
 - name: Add egress subnets to dictionary
   set_fact:
-    subnetDict: "{{ subnetDict | default([]) + [{ 'Name': edge+'-egress'+loop_index|string, 'CIDR': item, 'AZ': availZones[loop_index] }] }}"
+    subnetDict: "{{ subnetDict | default([]) + [{ 'Name': edge+'-egress'+loop_index|string, 'CIDR': item, 'AZ': availZones[loop_index], 'Create':'True' }] }}"
   loop: "{{egressSubnets}}"
   loop_control:
     index_var: loop_index
@@ -100,26 +100,30 @@
   register: subnet_info
 
 # Go through returned values to determine which already exist and then modify flag in dict to reflect
-- name: Parse returned data from AWS to determine subnet existance and create new list of subnet data - not existing
+- name: Parse returned data from AWS to determine subnet existance and create new list of subnet data
   set_fact:
-    newSubnetList: "{{ newSubnetList | default([]) + [{ 'Name':item.Name, 'CIDR': item.CIDR, 'AZ': item.AZ, 'Exists': False }] }}"
-  when: subnet_info.results[idx].subnets | length == 0
-  loop: "{{subnetDict}}"
-  loop_control:
-    index_var: idx
-
-- name: Parse returned data from AWS to determine subnet existance and create new list of subnet data - existing
-  set_fact:
-    newSubnetList: "{{ newSubnetList | default([]) + [{ 'Name':item.Name, 'CIDR': item.CIDR, 'AZ': item.AZ, 'Exists': True }] }}"
+    update_list: "{{ update_list + update }}"
+    updated: True
   when: subnet_info.results[idx].subnets | length > 0
   loop: "{{subnetDict}}"
   loop_control:
     index_var: idx
+  vars:
+    update_list: []
+    update:
+    - path: subnetDict[{{ idx }}].Create
+      value: False
 
-- name: Replace existing subnet information with new list
+- name: Create updated subnet information if it is changed
+  ansible.utils.update_fact:
+    updates: "{{ update_list }}"
+  when: (updated is defined)
+  register: updatedDict
+
+- name: Replace existing subnet information if it is changed
   set_fact:
-    subnetDict: "{{ newSubnetList }}"
-    newSubnetList: []
+    subnetDict: "{{ updatedDict.subnetDict }}"
+  when: (updated is defined)
 
 # Create Missing Subnets
 - name: Create missing subnets in VPC
@@ -132,7 +136,7 @@
     subnetName: "{{item.Name}}"
     usrProfile: "{{awsProfile}}"
     reqRegion: "{{awsRegion}}"
-  when: not item.Exists
+  when: item.Create
   loop: "{{subnetDict}}"
 
 # Append subnet id's to the subnet dictionary
@@ -146,18 +150,28 @@
 
 - name: Parse returned data from AWS to determine subnet existance and create new list of subnet data
   set_fact:
-    newSubnetList: "{{ newSubnetList | default([]) + [{ 'Name':item.Name, 'CIDR': item.CIDR, 'AZ': item.AZ, 'Exists': True, 'subnet_id': id }] }}"
+    update_list: "{{ update_list + update }}"
+    subnet_updated: True
   when: subnet_info.results[idx].subnets | length > 0
-  vars:
-    id: "{{ subnet_info.results[idx].subnets[0].id }}"
   loop: "{{subnetDict}}"
   loop_control:
     index_var: idx
+  vars:
+    update_list: []
+    update:
+    - path: subnetDict[{{ idx }}].subnet_id
+      value: "{{ subnet_info.results[idx].subnets[0].id }}"
 
-- name: Replace existing subnet information with new list
+- name: Create updated subnet information if it is changed
+  ansible.utils.update_fact:
+    updates: "{{ update_list }}"
+  when: (subnet_updated is defined)
+  register: updatedDict
+
+- name: Replace existing subnet information if it is changed
   set_fact:
-    subnetDict: "{{ newSubnetList }}"
-    newSubnetList: []
+    subnetDict: "{{ updatedDict.subnetDict }}"
+  when: (subnet_updated is defined)
 
 ###
 # Create the internet gateway
@@ -211,8 +225,7 @@
 
 - name: Generate list of NAT gateways to create
   set_fact:
-    natGWDict: "{{natGWDict | default([]) + [{'Name':envNamePrefix+'-'+item.Name+'-ngw','Subnet_id':item.subnet_id}] }}"
-    newNATGWList: []    # Create empty list for next step
+    natGWDict: "{{natGWDict | default([]) + [{'Name':envNamePrefix+'-'+item.Name+'-ngw','Subnet_id':item.subnet_id,'Create':'True'}] }}"
   when: '"egress" in item.Name'
   loop: "{{subnetDict}}"
 
@@ -225,38 +238,41 @@
   loop: "{{natGWDict}}"
   register: natGWReturnedInfo
 
-- name: Parse returned data from AWS to determine NAT gateway existance and create new list of NAT gateway data - exists
+- name: Parse returned data from AWS to determine NAT gateway existance and create new list of NAT gateway data
   set_fact:
-    newNATGWList: "{{ newNATGWList | default([]) + [ { 'Name':item.Name, 'Subnet_id':item.Subnet_id, 'Exists':True } ] }}"
+    update_list: "{{ update_list + update }}"
+    nat_updated: True
   when: natGWReturnedInfo.results[idx].result | length > 0
   loop: "{{natGWDict}}"
   loop_control:
     index_var: idx
+  vars:
+    update_list: []
+    update:
+    - path: natGWDict[{{ idx }}].Create
+      value: False
 
-- name: Parse returned data from AWS to determine NAT gateway existance and create new list of NAT gateway data - does not exist
-  set_fact:
-    newNATGWList: "{{ newNATGWList | default([]) + [ { 'Name':item.Name, 'Subnet_id':item.Subnet_id, 'Exists':False } ] }}"
-  when: natGWReturnedInfo.results[idx].result | length == 0
-  loop: "{{natGWDict}}"
-  loop_control:
-    index_var: idx
+- name: Create updated subnet information if it is changed
+  ansible.utils.update_fact:
+    updates: "{{ update_list }}"
+  when: (nat_updated is defined)
+  register: updatedDict
 
 - name: Replace existing subnet information if it is changed
   set_fact:
-    natGWDict: "{{ newNATGWList }}"
-    newNATGWList: []
+    natGWDict: "{{ updatedDict.natGWDict }}"
+  when: (nat_updated is defined)
 
-- name: Create NAT gateways and attach to egress subnets
-  include_role:
-    name: create_nat_gw
-  vars:
-    subnetId: "{{item.Subnet_id}}"
-    region: "{{awsRegion}}"
-    profile: "{{awsProfile}}"
-    ngwName: "{{item.Name}}"
-    wait_for_complete: True
-  when: not item.Exists
-  loop: "{{ natGWDict }}"
+#- name: Create NAT gateways and attach to egress subnets
+#  include_role:
+#    name: create_nat_gw
+#  vars:
+#    subnetId: "{{item.subnet_id}}"
+#    region: "{{awsRegion}}"
+#    profile: "{{awsProfile}}"
+#    ngwName: "{{item.Name}}"
+#  when: item.Create
+#  loop: "{{ natGWDict }}"
 
 # Read in NAT gateway details and append to dictionary of NAT Gateways
 
@@ -269,13 +285,9 @@
   loop: "{{natGWDict}}"
   register: natGWReturnedInfo
 
-- name: Create empty dictionary for new NAT gateway details
-  set_fact:
-    newDict: []
-
 - name: Parse NAT Gateway information and populate new dictionary
   set_fact:
-    newDict: "{{ newDict | default([]) + [{ 'Name':item.Name,'Subnet_id':item.Subnet_id,'Exists':True, 'Private_IP':private_ip, 'NAT_GW_id':gw_id }] }}"
+    newDict: "{{ newDict | default([]) + [{ 'Name':item.Name,'Subnet_id':item.Subnet_id,'Private_IP':private_ip, 'NAT_GW_id':gw_id }] }}"
   vars:
     private_ip: "{{ natGWReturnedInfo.results[idx].result[0].nat_gateway_addresses[0].private_ip }}"
     gw_id: "{{ natGWReturnedInfo.results[idx].result[0].nat_gateway_id }}"
@@ -287,39 +299,13 @@
   set_fact:
     natGWDict: "{{newDict}}"
 
-
-
-
-###
-# Create the Network ACLs
-
-- name: Clear variable
-  set_fact:
-    ingressSubnets: []
-
-- name: Create list of subnets for ingress Network ACL
-  set_fact:
-    ingressSubnets: "{{ ingressSubnets }} + [ '{{ item.subnet_id }}' ]"
-  loop: "{{subnetDict}}"
-  when: '"ingress" in item.Name'
-
 - debug:
-    msg: "{{ingressSubnets}}"
-
-- fail:
-    msg: "Stop here"
+    msg: "natGWDict = {{natGWDict}}"
 
 
-- name: Create Ingress Network ACL and associate with subnets
-  community.aws.ec2_vpc_nacl:
-    vpc_id: "{{edgeVpc.id}}"
-    name: "ingress-nacl"
-    subents: "{{ingressSubnets}}"
-
+## Modify NAT creation to not use module wait:true and use Ansible loop for wait
 
 # Create Network ACLs for each zone
 # Assign new Network ACLs to each zone
 # Modify route tables for each subnet
 
-# Modify NAT creation to not use module wait:true and use Ansible loop for wait
-# Change create vpc role to use a std name instead of defining format

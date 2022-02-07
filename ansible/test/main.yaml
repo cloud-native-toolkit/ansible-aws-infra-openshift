@@ -1,7 +1,10 @@
-region:
-  - edge_vpc:
-    - ingress_acl:
-    - bastion_acl:
-    - egress_acl:
-  - management_vpc:
-  - workload_vpc:
+---
+
+- hosts: localhost
+  tasks:
+  - name: Wait for file to appear
+    wait_for:
+      path: ./test
+      delay: 30
+      search_regex: completed
+      msg: "Waiting for task to complete" 

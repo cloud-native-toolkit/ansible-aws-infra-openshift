@@ -1,0 +1,82 @@
+---
+
+###
+# Create NAT Gateways for egress subnets
+
+- name: Generate list of NAT gateways to create
+  set_fact:
+    natGWDict: "{{natGWDict | default([]) + [{'Name':envNamePrefix+'-'+item.Name+'-ngw','Subnet_id':item.subnet_id}] }}"
+    newNATGWList: []    # Create empty list for next step
+  when: '"egress" in item.Name'
+  loop: "{{subnetDict}}"
+
+- name: Query AWS for existance of NAT gateways
+  amazon.aws.ec2_vpc_nat_gateway_info:
+    region: "{{awsRegion}}"
+    profile: "{{awsProfile}}"
+    filters:
+      subnet-id: "{{item.Subnet_id}}"
+  loop: "{{natGWDict}}"
+  register: natGWReturnedInfo
+
+- name: Parse returned data from AWS to determine NAT gateway existance and create new list of NAT gateway data - exists
+  set_fact:
+    newNATGWList: "{{ newNATGWList | default([]) + [ { 'Name':item.Name, 'Subnet_id':item.Subnet_id, 'Exists':True } ] }}"
+  when: natGWReturnedInfo.results[idx].result | length > 0
+  loop: "{{natGWDict}}"
+  loop_control:
+    index_var: idx
+
+- name: Parse returned data from AWS to determine NAT gateway existance and create new list of NAT gateway data - does not exist
+  set_fact:
+    newNATGWList: "{{ newNATGWList | default([]) + [ { 'Name':item.Name, 'Subnet_id':item.Subnet_id, 'Exists':False } ] }}"
+  when: natGWReturnedInfo.results[idx].result | length == 0
+  loop: "{{natGWDict}}"
+  loop_control:
+    index_var: idx
+
+- name: Replace existing subnet information if it is changed
+  set_fact:
+    natGWDict: "{{ newNATGWList }}"
+    newNATGWList: []
+
+- name: Create NAT gateways and attach to egress subnets
+  include_role:
+    name: create_nat_gw
+  vars:
+    subnetId: "{{item.Subnet_id}}"
+    region: "{{awsRegion}}"
+    profile: "{{awsProfile}}"
+    ngwName: "{{item.Name}}"
+    wait_for_complete: True
+  when: not item.Exists
+  loop: "{{ natGWDict }}"
+
+# Read in NAT gateway details and append to dictionary of NAT Gateways
+
+- name: Query AWS for NAT gateway details
+  amazon.aws.ec2_vpc_nat_gateway_info:
+    region: "{{awsRegion}}"
+    profile: "{{awsProfile}}"
+    filters:
+      subnet-id: "{{item.Subnet_id}}"
+  loop: "{{natGWDict}}"
+  register: natGWReturnedInfo
+
+- name: Create empty dictionary for new NAT gateway details
+  set_fact:
+    newDict: []
+
+- name: Parse NAT Gateway information and populate new dictionary
+  set_fact:
+    newDict: "{{ newDict | default([]) + [{ 'Name':item.Name,'Subnet_id':item.Subnet_id,'Exists':True, 'Private_IP':private_ip, 'NAT_GW_id':gw_id }] }}"
+  vars:
+    private_ip: "{{ natGWReturnedInfo.results[idx].result[0].nat_gateway_addresses[0].private_ip }}"
+    gw_id: "{{ natGWReturnedInfo.results[idx].result[0].nat_gateway_id }}"
+  loop: "{{natGWDict}}"
+  loop_control: 
+    index_var: idx
+
+- name: Replace existing NAT gateway dictionary with new one containing created gateway details
+  set_fact:
+    natGWDict: "{{newDict}}"

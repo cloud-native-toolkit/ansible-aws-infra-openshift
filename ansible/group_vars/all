@@ -32,7 +32,6 @@ edgeSubnetPrefix: 24
 #######
 # Do not change the following variables unless you know what you are doing as these may affect the automation
 #######
-noAvailZones: 3
 availZonePrefix: 16
 subnetPrefix: 24
 

@@ -1,8 +1,8 @@
-# AWS Create NAT Gateway
+# AWS Create Network ACL and associate with one or more subnets
 
-This role creates a NAT Gateway with an elastic IP and attached to a provided. If no region is specified, the default region for the profile is utilized.
+This role creates a Network ACL and associates it with one or more supplied subnets.
 
-it calls the amazon.aws.ec2_vpc_nat_gateway module.
+It calls the <i>community.aws.ec2_vpc_nacl</i> module.
 
 ## Input Variables
 
@@ -10,11 +10,12 @@ it calls the amazon.aws.ec2_vpc_nat_gateway module.
 | Variable     | Description |
 |--------------|-------------------------------------------------|
 
-| ngwName      | Name of the gateway to be created |
-| subnetId   | The id of the subnet that the NAT gateway will be attached to (e.g. subnet-123456789) |
+| naclName      | Name of the Network ACL to be created |
+| subnetIdList   | The list of subnet id to which the NACL will be associated (e.g. [subnet-123456789, subnet-987654321]) |
 | usrProfile   | Based upon boto configuration, the AWS user profile to be utilized (default: 'default')|
 | reqRegion    | The AWS region into which to create the VPC. Default is that associated with the provided AWS profile. |
-| wait_for_complete | Determines whether to wait for a successfully creation (which can take a few minutes), or return after AWS request sent |
+| vpcId | Identifier for the VPC into which to create the Network ACL (e.g. vpc-123456789) |
+
 
 ## Returned Variables
 

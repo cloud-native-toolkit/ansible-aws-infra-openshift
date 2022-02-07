@@ -1,0 +1,11 @@
+---
+####
+# Determine the CIDR for each of the subnets based upon the VPC CIDR
+- name: Calculate required subnet CIDR blocks
+  import_role: 
+    name: calc_subnets
+  vars:
+    vpc_cidr: "{{edge_cidr}}"
+    noAvailZones: "{{availZones | length}}"
+    availZonePrefix: "{{edgeTierPrefix}}"
+    subnetPrefix: "{{edgeSubnetPrefix}}"

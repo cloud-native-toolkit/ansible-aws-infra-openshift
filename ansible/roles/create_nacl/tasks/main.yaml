@@ -10,14 +10,10 @@
     defaultRegion: False
   when: (reqRegion is defined) and (reqRegion|length > 0)
 
-- name: Create AWS NAT Gateway with specified region
-  amazon.aws.ec2_vpc_nat_gateway:
-    subnet_id: "{{subnetId}}"
-    region: "{{reqRegion}}"
-    profile: "{{usrProfile}}"
-    wait: "{{wait_for_complete}}"
-    tags:
-      Name: "{{ngwName}}"
+- name: Create AWS Network ACL with specified region
+  community.aws.ec2_vpc_nacl:
+    vpc_id: "{{vpcId}}"
+    name: "{{naclName}}"
   register: returnedInfo_region
   when: not defaultRegion
 
