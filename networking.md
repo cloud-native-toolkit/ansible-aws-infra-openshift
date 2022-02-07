@@ -64,7 +64,7 @@ Inbound Rules
 Outbound Rules
 |Rule No. | Protocol | Allow/Deny | CIDR | ICMP Type | ICMP Code | From Port | To Port | Description | 
 | --------- | --------- | ----------- | --------- | ---------- | --------- | ---------- | --------- | --------------------------- |
-| 100 | All | Allow | 0.0.0.0/0 | null | null | 0 | 65535 | Open outbound connections |
+| 100 | All | Allow | 0.0.0.0/0 | null | null | 0 | 65535 | All outbound connections |
 
 
 ## Bastion
@@ -76,7 +76,8 @@ The network ACL controls access to the subnet as a whole. The following Network 
 Inbound Rules
 |Rule No. | Protocol | Allow/Deny | CIDR | ICMP Type | ICMP Code | From Port | To Port | Description | 
 | --------- | --------- | ----------- | --------- | ---------- | --------- | ---------- | --------- | --------------------------- |
-| 100 | TCP | Allow | Ingress_CIDR | null | null | 0 | 65535 | Only connections from the ingress subnets |
+| 100 | TCP | Allow | Bastion_CIDR | null | null | 0 | 65535 | Local connections |
+| 200 | TCP | Allow | Ingress_CIDR | null | null | 0 | 65535 | Only connections from the ingress subnets |
 
 <b>May need to tighten the list of available ports in future once requirements are finalised<b>
 
@@ -84,7 +85,7 @@ Inbound Rules
 Outbound Rules
 |Rule No. | Protocol | Allow/Deny | CIDR | ICMP Type | ICMP Code | From Port | To Port | Description | 
 | --------- | --------- | ----------- | --------- | ---------- | --------- | ---------- | --------- | --------------------------- |
-| 100 | All | Allow | 0.0.0.0/0 | null | null | 0 | 65535 | Open outbound connections |
+| 100 | All | Allow | 0.0.0.0/0 | null | null | 0 | 65535 | All outbound connections |
 
 <b>The open outbound connections may need to be tightened in future.</b>
 
@@ -95,7 +96,23 @@ The egress tier consists of a class C subnet in each availability zone. These su
 
 ### Route table
 
+### Network ACL
 
+The network ACL controls access to the subnet as a whole. The following Network ACL is required.
+
+Inbound Rules
+|Rule No. | Protocol | Allow/Deny | CIDR | ICMP Type | ICMP Code | From Port | To Port | Description | 
+| --------- | --------- | ----------- | --------- | ---------- | --------- | ---------- | --------- | --------------------------- |
+| 100 | TCP | Allow | Management_cidr | null | null | 0 | 65535 | All connections from management VPC |
+| 200 | TCP | Allow | Workload_cidr | null | null | 0 | 65535 | All connections from workload VPC |
+
+<b>May need to tighten the list of available ports in future once requirements are finalised<b>
+
+
+Outbound Rules
+|Rule No. | Protocol | Allow/Deny | CIDR | ICMP Type | ICMP Code | From Port | To Port | Description | 
+| --------- | --------- | ----------- | --------- | ---------- | --------- | ---------- | --------- | --------------------------- |
+| 100 | All | Allow | 0.0.0.0/0 | null | null | 0 | 65535 | All outbound connections |
 
 
 # Management Cluster
