@@ -53,7 +53,7 @@
   set_fact:
     bastionSubnets: []
 
-- name: Create list of subnets for ingress Network ACL
+- name: Create list of subnets for bastion Network ACL
   set_fact:
     bastionSubnets: "{{ bastionSubnets }} + [ '{{ item.subnet_id }}' ]"
   loop: "{{subnetDict}}"
@@ -77,7 +77,7 @@
     naclExists: False
   when: infoReturned.nacls|length == 0
 
-- name: Create Ingress Network ACL and associate with subnets
+- name: Create Bastion Network ACL and associate with subnets
   community.aws.ec2_vpc_nacl:
     vpc_id: "{{edgeVpc.id}}"
     name: 'bastion-nacl'
@@ -97,7 +97,7 @@
   set_fact:
     egressSubnets: []
 
-- name: Create list of subnets for ingress Network ACL
+- name: Create list of subnets for egress Network ACL
   set_fact:
     egressSubnets: "{{ egressSubnets }} + [ '{{ item.subnet_id }}' ]"
   loop: "{{subnetDict}}"
@@ -121,7 +121,7 @@
     naclExists: False
   when: infoReturned.nacls|length == 0
 
-- name: Create Ingress Network ACL and associate with subnets
+- name: Create Egress Network ACL and associate with subnets
   community.aws.ec2_vpc_nacl:
     vpc_id: "{{edgeVpc.id}}"
     name: 'egress-nacl'

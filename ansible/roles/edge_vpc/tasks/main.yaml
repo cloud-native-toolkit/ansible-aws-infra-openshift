@@ -42,8 +42,8 @@
     vpcName: "{{edge}}"
     usrProfile: "{{awsProfile}}"
     reqRegion: "{{awsRegion}}"
-    # The cidr_block is obtained from the earlier subnet calcs
-    cidr_block: "{{aclSubnets}}"
+    # The cidr_block is obtained from the earlier subnet calcs - only create with egress CIDR
+    cidr_block: "{{aclSubnets[2]}}"
   when: not vpcExists
 
 - name: Set facts of created VPC

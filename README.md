@@ -9,22 +9,26 @@
  Currently working on the Ansible build automation for the edge VPC cluster. 
 
 
- Update Feb 7th : The automation currently accepts multiple variable inputs for top level VPC CIDRs, regions and availability zones (which can vary in quantity). From this, it;
+ Update Feb 8th : The automation currently accepts multiple variable inputs for top level VPC CIDRs, regions and availability zones (which can vary in quantity). From this, it;
  1. calculates the required subnets and associated network CIDRs
  1. creates the VPC if it does not already exist 
  1. once the VPC is in place, it uses the VPC id to create each of the required subnets skipping those that already exist
  1. creates the internet gateway for the VPC if it does not exist
  1. creates the NAT gateways, if they do not exist, for each egress subnet using the egess subnet ids
  1. creates the Network ACLs for each of the Edge security zones (ingress, bastion and egress)
+ 1. creates the route tables for each edge subnet (although this needs to be modified once all the network devices are created)
 
  Next steps:
  - Edge VPC
     - validate that each NAT gateway is in "available" status before collecting private IP details
-    - modify the route tables for each subnet
     - create the VPN endpoints to the edge VPC
+    - create the load balancers for the edge VPC
+    - update the route table creation role to point to the created load balancers
  - create the management VPC
  - create the workload VPC
  - create the peer to peer networking between the VPCs
+ - add query to start of each role to make more standalone (will slow down but make more modular)
+ - modify edge route creation to occur after the other VPC's have been created and the VPC connection peering has been built in order to set the route via the VPC peer connection
 
 
  ## Ansible structure

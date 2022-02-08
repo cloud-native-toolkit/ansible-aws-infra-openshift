@@ -8,4 +8,7 @@
     - edge_igw
     - edge_nat
     - edge_nacl
+
+    # Routes need to be created after all VPCs and network devices
+    - edge_routes
     

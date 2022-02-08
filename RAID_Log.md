@@ -15,9 +15,10 @@
 | IS-01 | What is the VPE ACL utilized for? Same as VPC Endpoint? | RE | CLOSED |
 | IS-02  | Is a VPN Endpoint AND VPN Gateway required in AWS? | RE | CLOSED (No, VPN endpoint for inbound and need Internet GW for outbound) |
 | IS-03 | What is the equivalent of a Virtual Private Endpoint (VPE) in AWS? | RE | CLOSED |
-| IS-04 | How to automate entry of ROSA parameters like VPC? | RE | OPEN | 
+| IS-04 | How to automate entry of ROSA parameters like VPC? | RE | CLOSED (Use CLI parameters) | 
 | IS-05 | Are we able to use community Ansible modules? If so, is there additional open source actions to take? | RE | OPEN |
 | IS-06 | What are the network port requirements between the ingress and bastion tiers? | RE | OPEN |
+| IS-07 | Where does the traffic need to go from the bastion network? | RE | OPEN |
 
 
 
