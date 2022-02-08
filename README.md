@@ -57,7 +57,7 @@
 
  The architectural overview of the environment is as follows:
 
-![Architecture Overview](./static/ibm-cloud-on-AWS.png)
+![Architecture Overview](./static/arch-overview.png)
 
 Further details of the Management and Workload VPCs are per the following architecture overview and in the ROSA details [here](./ROSA-cluster.md#Multiple_AZ_cluster_configuration):
 
