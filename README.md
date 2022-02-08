@@ -1,5 +1,5 @@
-# FSCloud-on-AWS
- This repository is to document the build of a Finacial Services Cloud equivalent on native AWS.
+# IBM AWS Reference Architecture
+ This repository is to document the build of a cloud reference architecture with OpenShift in AWS with Ansible.
 
  The environment is built using AWS components Ansible automation.
 
@@ -47,15 +47,9 @@
 
  The [networking](networking.md) readme contains details of the network configuration for this setup.
 
- The [ansible build steps](ansible-steps.md) readme contains the tasks followed by ansible to create the FS Cloud environment on AWS.
-
- The [build-steps](build-steps.md) readme contains the manual steps using the AWS CLI to create the cloud environment. Will be migrated to Ansible for automation.
-
  The [Access Guide](access-options.md) provides options tested for users to access provisioned servers in the AWS environment.
 
  The [Red Hat OpenShift on AWS (ROSA)](ROSA-cluster.md) documents the steps to build the OpenShift clusters. 
-
- The [AWS-CLI-cmds readme](AWS-CLI-cmds.md) document contains the key AWS CLI commands that would be utilized for a build. These could be included in an Ansible playbook. Per above, investigating if it is easier to use Ansible command line calls to aws cli or aws modules.
 
  [Architectural Decisions](ADs.md) document the design decisions made and the rationale for each decision.
 
@@ -63,7 +57,7 @@
 
  The architectural overview of the environment is as follows:
 
-![Architecture Overview](./static/FS-Cloud-on-AWS.png)
+![Architecture Overview](./static/ibm-cloud-on-AWS.png)
 
 Further details of the Management and Workload VPCs are per the following architecture overview and in the ROSA details [here](./ROSA-cluster.md#Multiple_AZ_cluster_configuration):
 

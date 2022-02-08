@@ -1,6 +1,6 @@
 # Network security and routing
 
-The FS Cloud environment consists of 3 virtual private clouds (VPCs).
+The cloud environment consists of 3 virtual private clouds (VPCs).
     - Edge
     - Management
     - Workload
