@@ -2,13 +2,18 @@
 
 - hosts: localhost
   roles:
+#    - management_rosa      # Create the Red Hat OpenShift on AWS (ROSA) management VPC and cluster  
+#    - workload_rosa        # Create the Red Hat OpenShift on AWS (ROSA) workload VPC and cluster   
     - edge_cidrs
     - edge_vpc
     - edge_subnets
     - edge_igw
     - edge_nat
     - edge_nacl
+#    - edge_elb             # Create the edge load balancers
+#    - modify_management    # Wait for management ROSA cluster build complete and make modifications to suit reference architecture
+#    - modify_workload      # Wait for workload ROSA cluster build complete and make modifications to suit reference architecture
+#    - vpc_networking       # Create the peer-to-peer networking between the VPCs
+    - edge_routes          # Create the network routing between the subnets, VPC and network devices
 
-    # Routes need to be created after all VPCs and network devices
-    - edge_routes
     

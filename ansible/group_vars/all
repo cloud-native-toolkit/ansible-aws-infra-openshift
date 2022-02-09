@@ -15,10 +15,10 @@ availZones:
   - 'us-east-1c'
 
 # Name tag for the elements that will be created
-envNamePrefix: fs-cloud
+envNamePrefix: myCloud
 edge: edge
 management: mgmt
-workload: workload
+workload: wkld
 
 # Network addresses. Note that these must be at least /13 addresses and must not overlap with each other or on site ranges
 edge_cidr: 10.0.0.0/14
