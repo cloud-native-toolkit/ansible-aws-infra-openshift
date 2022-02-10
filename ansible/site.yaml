@@ -2,12 +2,12 @@
 
 - hosts: localhost
   roles:
-#    - management_rosa      # Create the Red Hat OpenShift on AWS (ROSA) management VPC and cluster  
+    - management_rosa      # Create the Red Hat OpenShift on AWS (ROSA) management VPC and cluster  
 #    - workload_rosa        # Create the Red Hat OpenShift on AWS (ROSA) workload VPC and cluster   
-    - edge_cidrs
-    - edge_vpc
+#    - edge_cidrs
+#    - edge_vpc
 #    - edge_subnets
-    - edge_cvpn
+#    - edge_cvpn
 #    - edge_igw
 #    - edge_nat
 #    - edge_nacl

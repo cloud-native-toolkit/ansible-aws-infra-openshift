@@ -1,0 +1,32 @@
+---
+
+- name: Clear variables
+  set_fact:
+    cluster: []
+    response: []
+
+- name: Set cluster name
+  set_fact:
+    cluster: "{{ cluster | default({ 'Name':cluster_name }) }}"
+
+- name: Query for ROSA Cluster existence
+  shell: |
+    set timeout 300
+
+    {{rosa_path}}rosa list clusters
+
+    exit 0
+  args:
+    executable: /bin/bash
+  delegate_to: localhost
+  register: response
+
+- name: Parse response for cluster existence
+  set_fact:
+    cluster: "{{ cluster | default({}) | combine({ 'Exists':True }) }}"
+  when: '"{{cluster_name}}" in response.stdout'
+
+- name: Parse response for cluster does not exist
+  set_fact:
+    cluster: "{{ cluster | default({}) | combine({ 'Exists':False }) }}"
+  when: '"{{cluster_name}}" not in response.stdout'

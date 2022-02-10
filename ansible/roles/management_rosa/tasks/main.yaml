@@ -1,0 +1,21 @@
+---
+
+- name: Clear variables
+  set_fact:
+    mgmtCluster: []
+
+- name: Determine if cluster already exists
+  import_role:
+    name: rosa_query_clusters
+  vars:
+    cluster_name: "{{envNamePrefix}}-{{management}}"
+
+- name: Update variable
+  set_fact:
+    mgmtCluster: "{{cluster}}"
+
+- debug:
+    msg: [
+      "Query to existing of cluster: Response = {{mgmtCluster.Exists}}",
+      "Start build"
+    ]
