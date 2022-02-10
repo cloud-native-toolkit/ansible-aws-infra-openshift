@@ -24,9 +24,9 @@
 - name: Parse response for cluster existence
   set_fact:
     cluster: "{{ cluster | default({}) | combine({ 'Exists':True }) }}"
-  when: '"{{cluster_name}}" in response.stdout'
+  when: 'cluster_name in response.stdout'
 
 - name: Parse response for cluster does not exist
   set_fact:
     cluster: "{{ cluster | default({}) | combine({ 'Exists':False }) }}"
-  when: '"{{cluster_name}}" not in response.stdout'
+  when: 'cluster_name not in response.stdout'
