@@ -29,5 +29,9 @@ workload_cidr: 10.200.0.0/14
 edgeTierPrefix: 16
 edgeSubnetPrefix: 24
 
+# Path to executables on local host
+aws_path: "/usr/local/bin/"
+rosa_path: "/usr/local/bin/"
+
 
 
