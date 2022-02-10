@@ -54,7 +54,7 @@
 
  The [Access Guide](access-options.md) provides options tested for users to access provisioned servers in the AWS environment.
 
- The [Red Hat OpenShift on AWS (ROSA)](ROSA-cluster.md) documents the steps to build the OpenShift clusters. 
+ The [Red Hat OpenShift on AWS (ROSA)](ROSA-cluster.md) documents the steps to build the OpenShift clusters and shows the generated architecture. 
 
  ## Reference Architecture
 

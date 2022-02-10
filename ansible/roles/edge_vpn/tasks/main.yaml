@@ -1,0 +1,8 @@
+---
+
+- name: Query AWS for existing VPN Endpoints
+  command: aws ec2 describe-client-vpn-endpoints
+  register: response
+
+- debug:
+    msg: "Output is {{response}}"

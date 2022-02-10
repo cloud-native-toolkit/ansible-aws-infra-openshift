@@ -76,6 +76,10 @@ Scenario: Instance is deployed to subnet in VPC.
 
 ![VPN Access Architecture Overview](./static/vpn-access.png)
 
+Alternately, additional subnets can be configured with the VPN endpoint to create a multi-AZ architecture as follows.
+
+![Multi-Availability Zone Architecture Overview](./static/vpn-multi-az.png)
+
 This method uses mutual authentication via RSA certificates. Other options include the use of SAML.
 
 1. Create server certificate 
