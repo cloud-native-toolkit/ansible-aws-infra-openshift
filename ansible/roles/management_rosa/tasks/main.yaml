@@ -4,6 +4,13 @@
   set_fact:
     mgmtCluster: []
 
+- name: Verify ROSA local configuration
+  import_role:
+    name: rosa_validate_access
+  vars:
+    profile: "{{awsProfile}}"
+    region: "{{awsRegion}}"
+
 - name: Determine if cluster already exists
   import_role:
     name: rosa_query_clusters

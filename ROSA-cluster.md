@@ -86,7 +86,7 @@ It is possible to customize the other parameters such as the CIDRs if required. 
 Once the build has started, create the operator roles and OIDC provider in order to proceed with the implementation.
 
         $ rosa create operator-roles --mode manual --cluster <cluster-name>
-        $ roas create oidc-provider --mode manual --cluster <cluster-name>
+        $ rosa create oidc-provider --mode manual --cluster <cluster-name>
 
 where:
 - "cluster-name" is the name of the cluster that is being created.
