@@ -1,18 +1,77 @@
 ---
 
+# Pass a dictionary, cluster, to this role. Cluster needs to contain,
+# Name
+# Region
+# Compute nodes
+# Multi-AZ - boolean. True to create a multi-AZ cluster. Defaults to false.
+
+
+# Kick off cluster creation
+
 - name: Clear variables
   set_fact:
-    cluster: []
+    response_multi_az: []
+    response_single_az: []
     response: []
 
-- name: Query for ROSA Cluster existence
+- name: Kick off multi-availability zone cluster creation
   shell: |
     set timeout 300
 
-    {{rosa_path}}rosa create cluster
+    {{rosa_path}}rosa create cluster \
+    --cluster-name {{cluster_name}} \
+    --machine-cidr {{machine_cidr}} \
+    --multi-az \
+    --compute-nodes {{compute_nodes}} \
+    --region {{region}} \
+    --profile {{profile}} \
+    --role-arn arn:aws:iam::{{accountid}}:role/ManagedOpenShift-Installer-Role \
+    --support-role-arn arn:aws:iam::{{accountid}}:role/ManagedOpenShift-Installer-Role \
+    --controlplane-iam-role arn:aws:iam::{{accountid}}:role/ManagedOpenShift-ControlPlane-Role \
+    --worker-iam-role arn:aws:iam::{{accountid}}:role/ManagedOpenShift-Worker-Role 
 
     exit 0
   args:
     executable: /bin/bash
   delegate_to: localhost
-  register: response
+  register: response_multi_az
+  when: multi_az
+
+
+- name: Kick off single availability zone cluster creation
+  shell: |
+    set timeout 300
+
+    {{rosa_path}}rosa create cluster \
+    --cluster-name {{cluster_name}} \
+    --machine-cidr {{machine_cidr}} \
+    --compute-nodes {{compute_nodes}} \
+    --region {{region}} \
+    --profile {{profile}} \
+    --role-arn arn:aws:iam::{{accountid}}:role/ManagedOpenShift-Installer-Role \
+    --support-role-arn arn:aws:iam::{{accountid}}:role/ManagedOpenShift-Installer-Role \
+    --controlplane-iam-role arn:aws:iam::{{accountid}}:role/ManagedOpenShift-ControlPlane-Role \
+    --worker-iam-role arn:aws:iam::{{accountid}}:role/ManagedOpenShift-Worker-Role 
+
+    exit 0
+  args:
+    executable: /bin/bash
+  delegate_to: localhost
+  register: response_single_az
+  when: not multi_az
+
+- name: Set response to multi-az if creating multi-az cluster
+  set_fact:
+    response: "{{response_multi_az}}"
+  when: multi_az
+
+- name: Set response to single-az if creating single-az cluster
+  set_fact:
+    response: "{{response_single_az}}"
+  when: not multi_az
+
+# Create operator roles
+
+
+# Create ODIC provider role

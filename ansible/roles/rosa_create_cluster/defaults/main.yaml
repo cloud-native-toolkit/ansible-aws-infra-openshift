@@ -1,0 +1,5 @@
+---
+# These are the default values if none if provided
+profile: "default"
+region: "{{ lookup('aws_account_attribute', attribute='default-region') }}"
+accountid: "{{ lookup('aws_account_atttribute', attribute='account-id')}}"

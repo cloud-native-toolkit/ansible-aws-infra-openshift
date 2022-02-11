@@ -1,5 +1,7 @@
 ---
 
+# The following code needs to be created (duplicate of CLI check at present)
+
 - name: Clear variables
   set_fact:
     response: []
@@ -60,6 +62,7 @@
   set_fact:
     rosa: "{{rosa | default() | combine({'Access':False})}}"
   when: ("AWS Account ID" not in response.stdout) or ("OCM Account ID" not in response.stdout)
+
 
 - name: Exit if ROSA Access not configured
   fail:

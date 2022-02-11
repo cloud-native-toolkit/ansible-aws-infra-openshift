@@ -1,0 +1,73 @@
+---
+
+- name: Clear variables
+  set_fact:
+    response: []
+    rosa: []
+    response_default: []
+    response_nondefault: []
+
+
+# The following code needs to be modified. 
+# The rosa verify quota command does not output to stdout. Plus need to include verification of permissions
+
+- name: Clear variables
+  set_fact:
+    response_default: []
+    response_nondefault: []
+    response: []
+
+- name: Query for ROSA quota (region not provided)
+  shell: |
+    set timeout 300
+
+    {{rosa_path}}rosa verify quota \
+    --profile {{profile}}
+
+    exit 0
+  args:
+    executable: /bin/bash
+  delegate_to: localhost
+  register: response_default
+  when: region is not defined
+
+- name: Query for ROSA quota (region provided)
+  shell: |
+    set timeout 300
+
+    {{rosa_path}}rosa verify quota \
+    --profile {{profile}} \
+    --region {{region}} > /tmp/verify_output
+
+    exit 0
+  args:
+    executable: /bin/bash
+  delegate_to: localhost
+  register: response_nondefault
+  when: region is defined
+
+- name: Set response to region if provided
+  set_fact:
+    response: "{{response_nondefault}}"
+  when: region is defined
+
+- name: Set response to default if region not provided
+  set_fact:
+    response: "{{response_default}}"
+  when: region is not defined
+
+- name: Parse for quota okay
+  set_fact:
+    rosa: "{{rosa | default() | combine({'Quota':True})}}"
+  when: '"AWS quota ok" in response.stdout'
+
+- name: Parse for quota not okay
+  set_fact:
+    rosa: "{{rosa | default() | combine({'Quota':False})}}"
+  when: '"AWS quota ok" not in response.stdout'
+
+- name: Exit if ROSA Quota not satisfactory
+  fail:
+    msg: [
+      "Unable to proceed. Please ensure ROSA quota is available and try again."
+    ]

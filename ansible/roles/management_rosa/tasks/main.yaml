@@ -4,25 +4,78 @@
   set_fact:
     mgmtCluster: []
 
-- name: Verify ROSA local configuration
+- name: Verify ROSA API access and configuration
   import_role:
     name: rosa_validate_access
   vars:
     profile: "{{awsProfile}}"
     region: "{{awsRegion}}"
 
+# To do - add validation of quota and permissions
+# To do - add validation that roles have been created
+
 - name: Determine if cluster already exists
   import_role:
     name: rosa_query_clusters
   vars:
-    cluster_name: "{{envNamePrefix}}-{{management}}"
+    cluster_name: "{{envNamePrefix|lower}}-{{management}}"
 
-- name: Update variable
+- name: Update variables
   set_fact:
     mgmtCluster: "{{cluster}}"
 
+- name: Set multiple zone implementation true if more than one region specified
+  set_fact:
+    mgmtCluster: "{{mgmtCluster | default({}) | combine({'MultiAZ':True})}}"
+  when: (availZones is defined) and (availZones | length > 1)
+
+- name: Set multiple zone implementation false if only one region specified
+  set_fact:
+    mgmtCluster: "{{mgmtCluster | default({}) | combine({'MultiAZ':False})}}"
+  when: (availZones | length == 1) or (availZones | length == 0) or (availZones is not defined)
+
+- name: Calculate Server CIDR
+  script: ../files/split-subnet.py --cidr {{vpc_cidr}} --prefix {{availZonePrefix}} --count {{noAvailZones}} 
+  vars:
+    vpc_cidr: "{{management_cidr}}"
+    availZonePrefix: "{{mgmtTierPrefix}}"
+    noAvailZones: 2   # Public and private
+  register: cidrReturn
+  when: not cluster.Exists
+
+- name: Set public and private CIDRs
+  set_fact:
+    mgmt_cidrs: "{{cidrReturn.stdout_lines}}"
+    mgmt_private_cidr: "{{cidrReturn.stdout_lines[0]}}"
+    mgmt_public_cidr: "{{cidrReturn.stdout_lines[1]}}"
+  when: not cluster.Exists
+
+- name: Build multi-availability zone cluster
+  import_role:
+    name: rosa_create_cluster
+  vars:
+    cluster_name: "{{envNamePrefix|lower}}-{{management}}"
+    machine_cidr: "{{mgmt_private_cidr}}"
+    compute_nodes: "{{availZones | length}}"
+    region: "{{awsRegion}}"
+    profile: "{{awsProfile}}"
+    multi_az: True
+  when: (not mgmtCluster.Exists) and (mgmtCluster.MultiAZ)
+
+- name: Build single zone cluster
+  import_role:
+    name: rosa_create_cluster
+  vars:
+    cluster_name: "{{envNamePrefix|lower}}-{{management}}"
+    machine_cidr: "{{mgmt_private_cidr}}"
+    compute_nodes: 2
+    region: "{{awsRegion}}"
+    profile: "{{awsProfile}}"
+    multi_az: False
+  when: (not mgmtCluster.Exists) and (not mgmtCluster.MultiAZ)
+
 - debug:
     msg: [
-      "Query to existing of cluster: Response = {{mgmtCluster.Exists}}",
-      "Start build"
+      "Response from cluster creation task is",
+      "{{response}}"
     ]

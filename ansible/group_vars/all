@@ -8,6 +8,9 @@ awsProfile: default
 # Region into which to deploy
 awsRegion: us-east-1
 
+# The acocunt id to be used
+accountid: 005990573564
+
 # Availability zones (these must be part of the region previously defined)
 availZones:
   - 'us-east-1a'
@@ -28,6 +31,10 @@ workload_cidr: 10.200.0.0/14
 # The next values are the network prefixes for the tier (ingress, bastion, egress) and individual subnet within those tiers
 edgeTierPrefix: 16
 edgeSubnetPrefix: 24
+
+# The next values are the network prefixes for the tier (public, private) and individual subnet within those tiers
+mgmtTierPrefix: 16
+mgmtSubnetPrefix: 24
 
 # Path to executables on local host
 aws_path: "/usr/local/bin/"
