@@ -1,0 +1,6 @@
+---
+
+cluster_name: '{{ undef(hint="Must define a cluster name")}}'
+retries: 30
+delay: 120
+ready_state: "ready"

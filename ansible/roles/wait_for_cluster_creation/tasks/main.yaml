@@ -1,0 +1,15 @@
+---
+
+# Ansible role to wait for a ROSA cluster to be ready
+
+# Add check for current status
+
+- name: Wait for cluster to be ready
+  shell: |
+    {{rosa_path}}rosa describe cluster --cluster {{cluster_name}} | grep State
+  args:
+    executable: /bin/bash
+  register: response
+  until: 'ready_state in response.stdout'
+  retries: "{{retries}}"
+  delay: "{{delay}}"

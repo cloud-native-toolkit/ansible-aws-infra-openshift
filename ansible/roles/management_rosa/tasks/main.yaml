@@ -4,32 +4,26 @@
   set_fact:
     mgmtCluster: []
 
-- name: Verify ROSA API access and configuration
-  import_role:
-    name: rosa_validate_access
-  vars:
-    profile: "{{awsProfile}}"
-    region: "{{awsRegion}}"
-
-# To do - add validation of quota and permissions
-# To do - add validation that roles have been created
-
 - name: Determine if cluster already exists
   import_role:
     name: rosa_query_clusters
   vars:
-    cluster_name: "{{envNamePrefix|lower}}-{{management}}"
+    cluster_name: "{{envNamePrefix|lower}}-{{management|lower}}"
 
 - name: Update variables
   set_fact:
     mgmtCluster: "{{cluster}}"
+
+- name: Define cluster name
+  set_fact:
+    mgmtCluster: "{{mgmtCluster | default({}) | combine({'Name':envNamePrefix|lower+'-'+management|lower})}}"
 
 - name: Set multiple zone implementation true if more than one region specified
   set_fact:
     mgmtCluster: "{{mgmtCluster | default({}) | combine({'MultiAZ':True})}}"
   when: (availZones is defined) and (availZones | length > 1)
 
-- name: Set multiple zone implementation false if only one region specified
+- name: Set single zone implementation false if only one region specified
   set_fact:
     mgmtCluster: "{{mgmtCluster | default({}) | combine({'MultiAZ':False})}}"
   when: (availZones | length == 1) or (availZones | length == 0) or (availZones is not defined)
@@ -54,10 +48,10 @@
   import_role:
     name: rosa_create_cluster
   vars:
-    cluster_name: "{{envNamePrefix|lower}}-{{management}}"
+    cluster_name: "{{mgmtCluster.Name}}"
     machine_cidr: "{{mgmt_private_cidr}}"
     compute_nodes: "{{availZones | length}}"
-    region: "{{awsRegion}}"
+    region: "{{awsRegion|default(omit)}}"
     profile: "{{awsProfile}}"
     multi_az: True
   when: (not mgmtCluster.Exists) and (mgmtCluster.MultiAZ)
@@ -66,10 +60,10 @@
   import_role:
     name: rosa_create_cluster
   vars:
-    cluster_name: "{{envNamePrefix|lower}}-{{management}}"
+    cluster_name: "{{mgmtCluster.Name}}"
     machine_cidr: "{{mgmt_private_cidr}}"
     compute_nodes: 2
-    region: "{{awsRegion}}"
+    region: "{{awsRegion|default(omit)}}"
     profile: "{{awsProfile}}"
     multi_az: False
   when: (not mgmtCluster.Exists) and (not mgmtCluster.MultiAZ)
@@ -79,3 +73,15 @@
       "Response from cluster creation task is",
       "{{response}}"
     ]
+
+#- name: Create management roles
+#  import_role:
+#    name: rosa_role_creation
+#  vars:
+#    cluster_name: "{{envNamePrefix|lower}}-{{management|lower}}"
+
+- name: Wait for management cluster creation
+  import_role:
+    name: wait_for_cluster_creation
+  vars:
+    cluster_name: "{{mgmtCluster.Name}}"

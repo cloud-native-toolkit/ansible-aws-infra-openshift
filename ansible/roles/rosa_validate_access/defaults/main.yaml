@@ -1,4 +1,5 @@
 ---
 
 # These are the default values if none if provided
-region: "default"
+profile: "default"
+rosa_path: "/usr/local/bin/"

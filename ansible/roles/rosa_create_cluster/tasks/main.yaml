@@ -20,6 +20,8 @@
     set timeout 300
 
     {{rosa_path}}rosa create cluster \
+    --sts \
+    --mode auto \
     --cluster-name {{cluster_name}} \
     --machine-cidr {{machine_cidr}} \
     --multi-az \
@@ -44,6 +46,8 @@
     set timeout 300
 
     {{rosa_path}}rosa create cluster \
+    --sts \
+    --mode auto \
     --cluster-name {{cluster_name}} \
     --machine-cidr {{machine_cidr}} \
     --compute-nodes {{compute_nodes}} \
@@ -70,8 +74,3 @@
   set_fact:
     response: "{{response_single_az}}"
   when: not multi_az
-
-# Create operator roles
-
-
-# Create ODIC provider role

@@ -1,0 +1,11 @@
+---
+
+cluster_name: '{{ undef(hint="Must provide cluster name to create roles") }}'
+profile: "default"
+rosa_path: "/usr/local/bin"
+operator_roles:
+  - "openshift-ingress-operator"
+  - "openshift-cluster-csi"
+  - "openshift-machine-api"
+  - "openshift-cloud-credential"
+  - "openshift-image-register"
