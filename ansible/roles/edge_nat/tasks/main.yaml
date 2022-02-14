@@ -5,7 +5,7 @@
 
 - name: Generate list of NAT gateways to create
   set_fact:
-    natGWDict: "{{natGWDict | default([]) + [{'Name':envNamePrefix+'-'+item.Name+'-ngw','Subnet_id':item.subnet_id}] }}"
+    natGWDict: "{{natGWDict | default([]) + [{'Name':item.Name+'-ngw','Subnet_id':item.subnet_id}] }}"
     newNATGWList: []    # Create empty list for next step
   when: '"egress" in item.Name'
   loop: "{{subnetDict}}"

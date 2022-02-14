@@ -5,9 +5,9 @@
 - name: Check if VPC already exists
   amazon.aws.ec2_vpc_net_info:
     profile: "{{awsProfile}}"
-    region: "{{awsRegion}}"
+    region: "{{awsRegion|default(omit)}}"
     filters:
-      "tag:Name": "{{envNamePrefix}}-{{edge}}-vpc"
+      "tag:Name": "{{envNamePrefix|lower}}-{{edge|lower}}-vpc"
   register: returnedInfo
 
 - name: Set exists if VPC found
@@ -23,7 +23,7 @@
 - name: Fail build if more than one VPC returned
   fail:
     msg: [
-      "ERROR: Found more than one existing VPC with name {{envNamePrefix}}-{{edge}}-vpc",
+      "ERROR: Found more than one existing VPC with name {{envNamePrefix|lower}}-{{edge|lower}}-vpc",
       "Please correct and retry"
     ]
   when: returnedInfo.vpcs|length > 1
@@ -38,10 +38,10 @@
     name: create_vpc
   vars:
     # These variable are defined in the global_vars file
-    envName: "{{envNamePrefix}}"
-    vpcName: "{{edge}}"
+    envName: "{{envNamePrefix|lower}}"
+    vpcName: "{{edge|lower}}"
     usrProfile: "{{awsProfile}}"
-    reqRegion: "{{awsRegion}}"
+    reqRegion: "{{awsRegion|default(omit)}}"
     # The cidr_block is obtained from the earlier subnet calcs - only create with egress CIDR
     cidr_block: "{{aclSubnets}}"
   when: not vpcExists
@@ -53,4 +53,4 @@
 
 - name: Display VPC id
   debug:
-    msg: "Edge VPC is {{edgeVpc.id}} for {{envNamePrefix}}-{{edge}}-vpc"
+    msg: "Edge VPC is {{edgeVpc.id}} for {{envNamePrefix|lower}}-{{edge|lower}}-vpc"
