@@ -3,7 +3,7 @@
 
 # Calculate the edge subnets
 - name: Split VPC CIDR into ACL subnets
-  script: ../files/split-subnet.py --cidr {{vpc_cidr}} --prefix {{availZonePrefix}} --count {{noAvailZones}} 
+  script: ../files/split-subnet.py --cidr {{vpc_cidr}} --prefix {{availZonePrefix}} --count {{noACLZones}} 
   register: cidrReturn
 
 - set_fact:

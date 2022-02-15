@@ -1,0 +1,7 @@
+---
+
+- name: Wait for workload cluster creation
+  import_role:
+    name: wait_for_cluster_creation
+  vars:
+    cluster_name: "{{wkldCluster.Name}}"

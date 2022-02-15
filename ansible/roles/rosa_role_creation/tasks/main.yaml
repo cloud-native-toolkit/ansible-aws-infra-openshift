@@ -8,11 +8,11 @@
     create_op_roles: False
     create_oidc_provider: False
 
-- name: Query for operator role existence
+- name: Query for cluster status
   shell: |
     set timeout 300
 
-    {{rosa_path}}rosa describe cluster --cluster {{cluster_name}}
+    {{rosa_path}}rosa list clusters | grep {{cluster_name}}
 
     exit 0
   args:
@@ -22,21 +22,13 @@
 
 - fail:
     msg: "Cluster {{cluster_name}} does not exist."
-  when: '"E: Failed to get cluster" in response'
+  when: 'cluster_name not in response.stdout'
 
-- name: Parse response for operator roles
-  set_fact:
-    opRoles: "{{opRoles + [{'Name':item[0],'Exists':True}]}}"
-  when: item[0] in item[1]
-  with_nested:
-    - "{{operator_roles}}"
-    - "{{response.stdout}}"
-
-- name: Review to determine if need to create operator roles
+- name: Create roles if cluster in waiting status
   set_fact:
     create_op_roles: True
-  when: not item.Exists
-  loop: "{{opRoles}}"
+    create_oidc_provider: True
+  when: '"waiting" in response.stdout'
 
 - name: Create operator roles
   shell: |
@@ -52,10 +44,6 @@
     executable: /bin/bash
   delegate_to: localhost
   when: create_op_roles
-
-- name: Check for OIDC role existence
-  debug:
-    msg: "This will check for the OIDC role"
 
 - name: Create OIDC Provider role
   shell: |

@@ -3,9 +3,9 @@
 - hosts: localhost
   roles:
     - start_time
-#    - validate_prereq
-#    - management_rosa      # Create the Red Hat OpenShift on AWS (ROSA) management VPC and cluster  
-#    - workload_rosa        # Create the Red Hat OpenShift on AWS (ROSA) workload VPC and cluster   
+    - validate_prereq
+    - management_rosa      # Create the Red Hat OpenShift on AWS (ROSA) management VPC and cluster  
+    - workload_rosa        # Create the Red Hat OpenShift on AWS (ROSA) workload VPC and cluster   
     - edge_cidrs
     - edge_vpc
     - edge_subnets
@@ -13,8 +13,8 @@
     - edge_igw
     - edge_nat
     - edge_nacl
-#    - wait_for_management  # Wait for management ROSA cluster to complete build
-#    - wait_for_workload    # Wait for workload ROSA cluster to complete build
+    - management_wait  # Wait for management ROSA cluster to complete build
+    - workload_wait    # Wait for workload ROSA cluster to complete build
 #    - modify_management    # Wait for management ROSA cluster build complete and make modifications to suit reference architecture
 #    - modify_workload      # Wait for workload ROSA cluster build complete and make modifications to suit reference architecture
 #    - vpc_networking       # Create the peer-to-peer networking between the VPCs
