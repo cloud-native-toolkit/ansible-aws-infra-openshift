@@ -1,0 +1,17 @@
+---
+
+- name: Create ROSA Cluster
+  hosts: localhost
+  tasks:    
+    - name: Kick off cluster build
+      include_role:
+        name: rosa_create_cluster
+      vars:
+        multi_az: false
+        cluster_name: "mycluster01"
+        region: "us-east-1"
+
+    - debug:
+        msg: [
+          "{{response}}"
+        ]
