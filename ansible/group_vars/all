@@ -8,9 +8,6 @@ awsProfile: default
 # Region into which to deploy
 awsRegion: us-east-1
 
-# The AWS Account id
-accountid: ''
-
 # Availability zones (these must be part of the region previously defined). Minimum one zone must be specified.
 availZones:
   - 'us-east-1a'

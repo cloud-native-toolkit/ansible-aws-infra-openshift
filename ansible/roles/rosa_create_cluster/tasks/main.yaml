@@ -16,16 +16,15 @@
     response: []
     cluster_exists: "{{False if (not check_for_existence) else None}}"   # Assume cluster does not exist if told not to check
 
-- pause:
-    prompt: "Please advise account id"
-  when: (accountid is not defined) or (accountid == '')
-  register: response
-  no_log: true
+- name: Get AWS Account Details
+  amazon.aws.aws_caller_info:
+  register: accountResponse
+  when: accountid is not defined
 
-- name: Set accountid to user runtime provided
+- name: Set account id
   set_fact:
-    accountid: "{{response.user_input}}"
-  when: (accountid is not defined) or (accountid == '')
+    accountid: "{{accountResponse.account}}"
+  when: accountid is not defined
 
 - name: Set region to default if not specified
   set_fact:
@@ -105,6 +104,9 @@
   set_fact:
     response: "{{response_single_az}}"
   when: not multi_az
+
+- debug:
+    msg: "{{response}}"
 
 - name: Create management roles
   include_tasks:
