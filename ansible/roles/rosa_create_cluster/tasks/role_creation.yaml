@@ -1,0 +1,61 @@
+---
+
+# Role to create the management accounts to progress the ROSA cluster creation.
+
+- name: Clear variables
+  set_fact:
+    opRoles: []
+    create_op_roles: False
+    create_oidc_provider: False
+
+- name: Query for cluster status
+  shell: |
+    set timeout 300
+
+    {{rosa_path}}rosa list clusters | grep {{cluster_name}}
+
+    exit 0
+  args:
+    executable: /bin/bash
+  delegate_to: localhost
+  register: response
+
+- fail:
+    msg: "Cluster {{cluster_name}} does not exist."
+  when: 'cluster_name not in response.stdout'
+
+- name: Create roles if cluster in waiting status
+  set_fact:
+    create_op_roles: True
+    create_oidc_provider: True
+  when: '"waiting" in response.stdout'
+
+- name: Create operator roles
+  shell: |
+    set timeout 300
+
+    {{rosa_path}}rosa create operator-roles -y \
+    --mode auto \
+    --profile {{profile}} \
+    --cluster {{cluster_name}}
+
+    exit 0
+  args:
+    executable: /bin/bash
+  delegate_to: localhost
+  when: create_op_roles
+
+- name: Create OIDC Provider role
+  shell: |
+    set timeout 300
+
+    {{rosa_path}}rosa create oidc-provider -y \
+    --mode auto \
+    --profile {{profile}} \
+    --cluster {{cluster_name}}
+
+    exit 0
+  args:
+    executable: /bin/bash
+  delegate_to: localhost
+  when: create_oidc_provider

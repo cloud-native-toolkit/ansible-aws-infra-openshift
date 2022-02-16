@@ -8,15 +8,16 @@ awsProfile: default
 # Region into which to deploy
 awsRegion: us-east-1
 
-# The acocunt id to be used
-accountid: 005990573564
+# The AWS Account id
+accountid: ''
 
-# Availability zones (these must be part of the region previously defined)
+# Availability zones (these must be part of the region previously defined). Minimum one zone must be specified.
 availZones:
   - 'us-east-1a'
 
 # Name tag for the elements that will be created
-envNamePrefix: myCloud
+# Elements are named envNamePrefix-edge-item_name-0
+envNamePrefix: mycloud
 edge: edge
 management: mgmt
 workload: wkld
@@ -41,6 +42,7 @@ wkldSubnetPrefix: 24
 # Path to executables on local host
 aws_path: "/usr/local/bin/"
 rosa_path: "/usr/local/bin/"
+aws_config_path: "~/.aws/"
 
 
 

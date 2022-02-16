@@ -3,20 +3,19 @@
 - name: Clear variables
   set_fact:
     mgmtCluster: []
-
-- name: Determine if cluster already exists
-  import_role:
-    name: rosa_query_clusters
-  vars:
     cluster_name: "{{envNamePrefix|lower}}-{{management|lower}}"
-
-- name: Update variables
-  set_fact:
-    mgmtCluster: "{{cluster}}"
 
 - name: Define cluster name
   set_fact:
-    mgmtCluster: "{{mgmtCluster | default({}) | combine({'Name':envNamePrefix|lower+'-'+management|lower})}}"
+    mgmtCluster: "{{mgmtCluster | default({}) | combine({'Name':cluster_name})}}"
+
+- name: Determine if cluster already exists
+  include_tasks:
+    file: query_clusters.yaml
+
+- name: Set cluster status
+  set_fact:
+    mgmtCluster: "{{mgmtCluster | default({}) | combine({'Exists':cluster_exists})}}"
 
 - name: Set multiple zone implementation true if more than one region specified
   set_fact:
@@ -35,14 +34,14 @@
     availZonePrefix: "{{mgmtTierPrefix}}"
     noAvailZones: 2   # Public and private
   register: cidrReturn
-  when: not cluster.Exists
+  when: not mgmtCluster.Exists
 
 - name: Set public and private CIDRs
   set_fact:
     mgmt_cidrs: "{{cidrReturn.stdout_lines}}"
     mgmt_private_cidr: "{{cidrReturn.stdout_lines[0]}}"
     mgmt_public_cidr: "{{cidrReturn.stdout_lines[1]}}"
-  when: not cluster.Exists
+  when: not mgmtCluster.Exists
 
 - name: Build multi-availability zone cluster
   import_role:
@@ -54,6 +53,8 @@
     region: "{{awsRegion|default(omit)}}"
     profile: "{{awsProfile}}"
     multi_az: True
+    wait_for_completion: False      # Will wait after doing other tasks
+    check_for_existence: False      # Well already know the cluster does not exist
   when: (not mgmtCluster.Exists) and (mgmtCluster.MultiAZ)
 
 - name: Build single zone cluster
@@ -66,10 +67,6 @@
     region: "{{awsRegion|default(omit)}}"
     profile: "{{awsProfile}}"
     multi_az: False
+    wait_for_completion: False   # Will wait after doing other tasks
+    check_for_existence: False   # Well already know the cluster does not exist
   when: (not mgmtCluster.Exists) and (not mgmtCluster.MultiAZ)
-
-- name: Create management roles
-  import_role:
-    name: rosa_role_creation
-  vars:
-    cluster_name: "{{envNamePrefix|lower}}-{{management|lower}}"

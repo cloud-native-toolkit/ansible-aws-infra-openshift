@@ -1,0 +1,22 @@
+---
+
+- name: Clear variables
+  set_fact:
+    cluster_exists: False
+    response: []
+
+- name: Query for ROSA Cluster existence
+  shell: |
+    set timeout 300
+
+    {{rosa_path}}rosa list clusters
+
+    exit 0
+  args:
+    executable: /bin/bash
+  delegate_to: localhost
+  register: response
+
+- name: Parse response for existing cluster
+  set_fact: 
+    cluster_exists: "{{True if (cluster_name in response.stdout) else False}}"

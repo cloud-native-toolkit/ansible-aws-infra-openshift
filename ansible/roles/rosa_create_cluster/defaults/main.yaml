@@ -1,5 +1,13 @@
 ---
 # These are the default values if none if provided
+rosa_path: "/usr/local/bin/"
+aws_config_path: "~/.aws/"
 profile: "default"
-region: "{{ lookup('aws_account_attribute', attribute='default-region') }}"
-accountid: "{{ lookup('aws_account_atttribute', attribute='account-id')}}"
+wait_for_completion: True    # This will cause the playbook to wait for the cluster to complete being built before proceeding
+check_for_existence: True    # This will cause the playbook to check for the existence of cluster_name before proceeding
+multi_az: False
+machine_cidr: 10.0.0.0/24
+compute_nodes: 2
+no_retries: 30
+retry_delay: 120
+ready_state: "ready"
