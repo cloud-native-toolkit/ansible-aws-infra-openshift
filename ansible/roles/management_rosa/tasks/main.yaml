@@ -3,7 +3,7 @@
 - name: Clear variables
   set_fact:
     mgmtCluster: []
-    cluster_name: "{{envNamePrefix|lower}}-{{management|lower}}"
+    cluster_name: "{{resourceGroup|lower}}-{{management|lower}}"
 
 - name: Define cluster name
   set_fact:

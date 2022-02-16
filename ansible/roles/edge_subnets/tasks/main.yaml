@@ -6,21 +6,21 @@
 # Create a dictionary of subnets to create and add an Exists flag set to false initially (will be updated when AWS queried)
 - name: Create dictionary of ingress subnets to be created
   set_fact:
-    subnetDict: "{{ subnetDict | default([]) + [{ 'Name': envNamePrefix|lower+'-'+edge|lower+'-ingress'+loop_index|string, 'CIDR': item, 'AZ': availZones[loop_index] }] }}"
+    subnetDict: "{{ subnetDict | default([]) + [{ 'Name': resourceGroup|lower+'-'+edge|lower+'-ingress'+loop_index|string, 'CIDR': item, 'AZ': availZones[loop_index] }] }}"
   loop: "{{ingressSubnets}}"
   loop_control:
     index_var: loop_index
 
 - name: Add bastion subnets to dictionary
   set_fact:
-    subnetDict: "{{ subnetDict | default([]) + [{ 'Name': envNamePrefix|lower+'-'+edge|lower+'-bastion'+loop_index|string, 'CIDR': item, 'AZ': availZones[loop_index] }] }}"
+    subnetDict: "{{ subnetDict | default([]) + [{ 'Name': resourceGroup|lower+'-'+edge|lower+'-bastion'+loop_index|string, 'CIDR': item, 'AZ': availZones[loop_index] }] }}"
   loop: "{{bastionSubnets}}"
   loop_control:
     index_var: loop_index
 
 - name: Add egress subnets to dictionary
   set_fact:
-    subnetDict: "{{ subnetDict | default([]) + [{ 'Name': envNamePrefix|lower+'-'+edge|lower+'-egress'+loop_index|string, 'CIDR': item, 'AZ': availZones[loop_index] }] }}"
+    subnetDict: "{{ subnetDict | default([]) + [{ 'Name': resourceGroup|lower+'-'+edge|lower+'-egress'+loop_index|string, 'CIDR': item, 'AZ': availZones[loop_index] }] }}"
   loop: "{{egressSubnets}}"
   loop_control:
     index_var: loop_index

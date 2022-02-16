@@ -20,7 +20,7 @@
     profile: "{{awsProfile}}"
     region: "{{awsRegion}}"
     filters:
-      'tag:Name': '{{envNamePrefix|lower}}-{{edge|lower}}-ingress-nacl'
+      'tag:Name': '{{resourceGroup|lower}}-{{edge|lower}}-ingress-nacl'
   register: infoReturned
 
 - name: Set exists to true if NACL exists
@@ -36,7 +36,7 @@
 - name: Create Ingress Network ACL and associate with subnets
   community.aws.ec2_vpc_nacl:
     vpc_id: "{{edgeVpc.id}}"
-    name: '{{envNamePrefix|lower}}-{{edge|lower}}-ingress-nacl'
+    name: '{{resourceGroup|lower}}-{{edge|lower}}-ingress-nacl'
     subnets: "{{ingressSubnets}}"
     ingress:
       - [100, 'tcp', 'allow', '0.0.0.0/0', null, null, 443, 443]
@@ -64,7 +64,7 @@
     profile: "{{awsProfile}}"
     region: "{{awsRegion}}"
     filters:
-      'tag:Name': '{{envNamePrefix|lower}}-{{edge|lower}}-bastion-nacl'
+      'tag:Name': '{{resourceGroup|lower}}-{{edge|lower}}-bastion-nacl'
   register: infoReturned
 
 - name: Set exists to true if NACL exists
@@ -80,7 +80,7 @@
 - name: Create Bastion Network ACL and associate with subnets
   community.aws.ec2_vpc_nacl:
     vpc_id: "{{edgeVpc.id}}"
-    name: '{{envNamePrefix|lower}}-{{edge|lower}}-bastion-nacl'
+    name: '{{resourceGroup|lower}}-{{edge|lower}}-bastion-nacl'
     subnets: "{{bastionSubnets}}"
     ingress:
       - [100, 'tcp', 'allow', "{{aclSubnets[0]}}", null, null, 0, 65535]
@@ -108,7 +108,7 @@
     profile: "{{awsProfile}}"
     region: "{{awsRegion}}"
     filters:
-      'tag:Name': '{{envNamePrefix|lower}}-{{edge|lower}}-egress-nacl'
+      'tag:Name': '{{resourceGroup|lower}}-{{edge|lower}}-egress-nacl'
   register: infoReturned
 
 - name: Set exists to true if NACL exists
@@ -124,7 +124,7 @@
 - name: Create Egress Network ACL and associate with subnets
   community.aws.ec2_vpc_nacl:
     vpc_id: "{{edgeVpc.id}}"
-    name: '{{envNamePrefix|lower}}-{{edge|lower}}-egress-nacl'
+    name: '{{resourceGroup|lower}}-{{edge|lower}}-egress-nacl'
     subnets: "{{egressSubnets}}"
     ingress:
       - [100, 'tcp', 'allow', "{{management_cidr}}", null, null, 0, 65535]

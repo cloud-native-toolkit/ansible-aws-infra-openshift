@@ -16,8 +16,8 @@ availZones:
   - 'us-east-1a'
 
 # Name tag for the elements that will be created
-# Elements are named envNamePrefix-edge-item_name-0
-envNamePrefix: mycloud
+# Elements are named resourceGroup-edge-item_name-0
+resourceGroup: mycloud
 edge: edge
 management: mgmt
 workload: wkld

@@ -23,7 +23,7 @@
   loop_control:
     index_var: idx
   vars:
-    name: "{{envNamePrefix|lower}}-{{edge|lower}}-ingress-rtb-{{idx|string}}"
+    name: "{{resourceGroup|lower}}-{{edge|lower}}-ingress-rtb-{{idx|string}}"
 
 - name: Query AWS for existence of ingress route tables
   amazon.aws.ec2_vpc_route_table_info:
@@ -96,7 +96,7 @@
   loop_control:
     index_var: idx
   vars:
-    name: "{{envNamePrefix|lower}}-{{edge|lower}}-bastion-rtb-{{idx|string}}"
+    name: "{{resourceGroup|lower}}-{{edge|lower}}-bastion-rtb-{{idx|string}}"
 
 - name: Query AWS for existence of bastion route tables
   amazon.aws.ec2_vpc_route_table_info:
@@ -152,7 +152,7 @@
 
 - name: Build list of egress routes from NAT Gateway list
   set_fact:
-    egressRTBs: "{{egressRTBs | default ([]) + [{ 'Name':envNamePrefix|lower + '-' + edge|lower + '-egress-rtb-' + idx|string, 'Subnet_id':item.Subnet_id, 'NAT_GW_id':item.NAT_GW_id }] }}"
+    egressRTBs: "{{egressRTBs | default ([]) + [{ 'Name':resourceGroup|lower + '-' + edge|lower + '-egress-rtb-' + idx|string, 'Subnet_id':item.Subnet_id, 'NAT_GW_id':item.NAT_GW_id }] }}"
   loop: "{{ natGWDict }}"
   loop_control:
     index_var: idx

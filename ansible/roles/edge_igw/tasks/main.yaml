@@ -9,7 +9,7 @@
     region: "{{awsRegion}}"
     profile: "{{awsProfile}}"
     filters: 
-      "tag:Name": "{{envNamePrefix|lower}}-{{edge|lower}}-igw"
+      "tag:Name": "{{resourceGroup|lower}}-{{edge|lower}}-igw"
   register: igwReturnedInfo
 
 - name: Set flag if IGW found
@@ -28,7 +28,7 @@
     name: create_igw
   vars:
     vpcId: "{{ edgeVpc.id }}"
-    igwName: "{{envNamePrefix|lower}}-{{edge|lower}}-igw"
+    igwName: "{{resourceGroup|lower}}-{{edge|lower}}-igw"
     usrProfile: "{{awsProfile}}"
     reqRegion: "{{awsRegion}}"
   when: not igwExists

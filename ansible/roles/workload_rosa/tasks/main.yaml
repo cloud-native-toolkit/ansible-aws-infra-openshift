@@ -6,7 +6,7 @@
 
 - name: Define cluster name
   set_fact:
-    wkldCluster: "{{wkldCluster | default({}) | combine({'Name':envNamePrefix|lower+'-'+workload|lower})}}"
+    wkldCluster: "{{wkldCluster | default({}) | combine({'Name':resourceGroup|lower+'-'+workload|lower})}}"
 
 - name: Determine if cluster already exists
   import_role:

@@ -7,7 +7,7 @@
     profile: "{{awsProfile}}"
     region: "{{awsRegion|default(omit)}}"
     filters:
-      "tag:Name": "{{envNamePrefix|lower}}-{{edge|lower}}-vpc"
+      "tag:Name": "{{resourceGroup|lower}}-{{edge|lower}}-vpc"
   register: returnedInfo
 
 - name: Set exists if VPC found
@@ -23,7 +23,7 @@
 - name: Fail build if more than one VPC returned
   fail:
     msg: [
-      "ERROR: Found more than one existing VPC with name {{envNamePrefix|lower}}-{{edge|lower}}-vpc",
+      "ERROR: Found more than one existing VPC with name {{resourceGroup|lower}}-{{edge|lower}}-vpc",
       "Please correct and retry"
     ]
   when: returnedInfo.vpcs|length > 1
@@ -38,7 +38,7 @@
     name: create_vpc
   vars:
     # These variable are defined in the global_vars file
-    envName: "{{envNamePrefix|lower}}"
+    envName: "{{resourceGroup|lower}}"
     vpcName: "{{edge|lower}}"
     usrProfile: "{{awsProfile}}"
     reqRegion: "{{awsRegion|default(omit)}}"
@@ -53,4 +53,4 @@
 
 - name: Display VPC id
   debug:
-    msg: "Edge VPC is {{edgeVpc.id}} for {{envNamePrefix|lower}}-{{edge|lower}}-vpc"
+    msg: "Edge VPC is {{edgeVpc.id}} for {{resourceGroup|lower}}-{{edge|lower}}-vpc"
