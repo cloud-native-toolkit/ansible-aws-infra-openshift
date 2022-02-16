@@ -1,0 +1,9 @@
+---
+
+- name: Display VPC details
+  debug:
+    msg: [
+      "{{edgeVPC}}",
+      "{{mgmtVPC}}",
+      "{{wkldVPC}}"
+    ]
