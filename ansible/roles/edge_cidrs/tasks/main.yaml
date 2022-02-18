@@ -1,11 +1,35 @@
 ---
 ####
-# Determine the CIDR for each of the subnets based upon the VPC CIDR
-- name: Calculate required subnet CIDR blocks
-  import_role: 
-    name: calc_subnets
-  vars:
-    vpc_cidr: "{{edge_cidr}}"
-    noAvailZones: "{{availZones | length}}"
-    availZonePrefix: "{{edgeTierPrefix}}"
-    subnetPrefix: "{{edgeSubnetPrefix}}"
+
+# Returns subnet CIDRs for a VPC consisting of Ingress, Bastion and Egress tiers (refer archtiecture documentation)
+
+# Calculate the edge subnets
+- name: Split VPC CIDR into ACL subnets
+  script: ../files/split-subnet.py --cidr {{edge_cidr}} --prefix {{edgeTierPrefix}} --count 3 
+  register: cidrReturn
+
+- set_fact:
+    aclSubnets: "{{cidrReturn.stdout_lines}}"
+
+- name: Split ingress subnet into subnets by availability zone
+  script: ../files/split-subnet.py --cidr {{aclSubnets[0]}} --prefix {{edgeSubnetPrefix}} --count {{availZones | length}}
+  register: cidrReturn
+
+- set_fact:
+    ingressSubnets: "{{cidrReturn.stdout_lines}}"
+
+- name: Split bastion subnet into subnets by availability zone
+  script: ../files/split-subnet.py --cidr {{aclSubnets[1]}} --prefix {{edgeSubnetPrefix}} --count {{availZones | length}}
+  register: cidrReturn
+
+- set_fact:
+    bastionSubnets: "{{cidrReturn.stdout_lines}}"
+
+- name: Split egress subnet into subnets by availability zone
+  script: ../files/split-subnet.py --cidr {{aclSubnets[2]}} --prefix {{edgeSubnetPrefix}} --count {{availZones | length}}
+  register: cidrReturn
+
+- set_fact:
+    egressSubnets: "{{cidrReturn.stdout_lines}}"
+
+

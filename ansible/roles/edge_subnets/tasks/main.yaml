@@ -93,3 +93,12 @@
   set_fact:
     subnetDict: "{{ newSubnetList }}"
     newSubnetList: []
+
+- name: Create clean list of subnets
+  set_fact:
+    newSubnetList: "{{newSubnetList | default([]) + [{ 'Name':item.Name, 'cidr':item.CIDR, 'Availability_Zone':item.AZ, 'id': item.subnet_id}] }}"
+  loop: "{{subnetDict}}"
+
+- name: Write subnet details to inventory
+  set_fact:
+    inventory: "{{inventory | combine({'edge':{'subnets':newSubnetList}}, recursive=True)}}"

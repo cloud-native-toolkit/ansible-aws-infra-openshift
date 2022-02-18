@@ -51,6 +51,11 @@
     edgeVpc: "{{vpcData.vpc}}"
   when: not vpcExists
 
-- name: Display VPC id
-  debug:
-    msg: "Edge VPC is {{edgeVpc.id}} for {{resourceGroup|lower}}-{{edge|lower}}-vpc"
+- name: Add VPC information to inventory
+  set_fact:
+    inventory: "{{inventory | combine({'edge':{'vpc':vpcDetails}}, recursive=True)}}"
+  vars:
+    vpcDetails: 
+      name: "{{edgeVpc.tags.Name}}"
+      cidr: "{{aclSubnets}}"
+      id: "{{edgeVpc.id}}"

@@ -80,3 +80,7 @@
 - name: Replace existing NAT gateway dictionary with new one containing created gateway details
   set_fact:
     natGWDict: "{{newDict}}"
+
+- name: Add NAT GW information to inventory
+  set_fact:
+    inventory: "{{inventory | combine({'edge':{'ngw':natGWDict}}, recursive=True)}}"

@@ -1,0 +1,16 @@
+inventory:
+  edge:
+    vpc: []
+    subnets: []
+    igw: []
+    ngw: []
+    nacl: []
+    rtbs: []
+  mgmt: 
+    rosa: []
+  wkld: 
+    rosa: []
+  pcxs: 
+    edgeMgmt: []
+    edgeWkld: []
+    mgmtWkld: []

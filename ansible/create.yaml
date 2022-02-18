@@ -1,25 +1,94 @@
 ---
 
-- hosts: localhost
-  roles:
-    - start_time
-    - validate_prereq
-    - management_rosa      # Create the Red Hat OpenShift on AWS (ROSA) management VPC and cluster  
-    - workload_rosa        # Create the Red Hat OpenShift on AWS (ROSA) workload VPC and cluster   
-    - edge_cidrs
-    - edge_vpc
-    - edge_subnets
-#    - edge_cvpn
-    - edge_igw
-    - edge_nat
-    - edge_nacl
-    - management_wait  # Wait for management ROSA cluster to complete build
-    - workload_wait    # Wait for workload ROSA cluster to complete build
-#    - modify_management    # Wait for management ROSA cluster build complete and make modifications to suit reference architecture
-#    - modify_workload      # Wait for workload ROSA cluster build complete and make modifications to suit reference architecture
-#    - vpc_networking       # Create the peer-to-peer networking between the VPCs
-    - edge_routes          # Create the network routing between the subnets, VPC and network devices
-    - end_time
-#    - display_completion
+- name: Create IBM reference architecture on AWS
+  hosts: localhost
+  tasks:
+
+    - include_vars:
+        file: ./inventory.yaml
+
+    - name: Get the current time
+      command: date
+      register: dateResponse
+
+    - name: Record current date
+      set_fact:
+        start_time: '{{dateResponse.stdout_lines[0]}}'
+
+    - include_role:
+        name: validate_prereq
+      when: (inventory.mgmt.rosa is defined) or (inventory.wkld.rosa is defined)
+
+    - include_role:
+        name: management_rosa
+      when: (inventory.mgmt.rosa is defined) and (inventory.mgmt.rosa | length == 0)
+
+    - include_role:
+        name: workload_rosa
+      when: (inventory.wkld.rosa is defined) and (inventory.wkld.rosa | length == 0)  
+
+    - include_role:
+        name: edge_cidrs
+      when: inventory.edge is defined    
+
+    - include_role:
+        name: edge_vpc
+      when: (inventory.edge.vpc is defined) and (inventory.edge.vpc | length == 0)
+
+    - include_role:
+        name: edge_subnets
+      when: (inventory.edge.subnets is defined) and (inventory.edge.subnets | length == 0)
+    
+    - include_role:
+        name: edge_cvpn
+      when: (inventory.edge.cvpn is defined) and (inventory.edge.cvpn | length == 0)
+
+    - include_role:
+        name: edge_igw
+      when: (inventory.edge.igw is defined) and (inventory.edge.igw | length == 0)
+
+    - include_role:
+        name: edge_ngw
+      when: (inventory.edge.ngw is defined) and (inventory.edge.ngw | length == 0)
+
+    - include_role:
+        name: edge_nacl
+      when: (inventory.edge.nacl is defined) and (inventory.edge.nacl | length == 0)
+
+    - include_role:
+        name: wait_for_cluster_creation
+      vars: 
+        cluster_name: inventory.mgmt.rosa.name
+      when: inventory.mgmt.rosa is defined  
+
+    - include_role:
+        name: wait_for_cluster_creation
+      vars: 
+        cluster_name: inventory.wkld.rosa.name
+      when: inventory.wkld.rosa is defined  
+
+    - include_role:
+        name: vpc_networking
+      when: inventory.pcxs | length > 0
+
+    - include_role:
+        name: edge_rtbs
+      when: inventory.edge.rtbs is defined
+
+    - name: Get the current time
+      command: date
+      register: dateResponse
+
+    - name: Record current date
+      set_fact:
+        end_time: '{{dateResponse.stdout_lines[0]}}'
+
+    - debug:
+        msg: [
+            "Start time was {{start_time}}",
+            "End time was {{end_time}}",
+            "Inventory => ",
+            "{{inventory}}"    
+        ]
 
     

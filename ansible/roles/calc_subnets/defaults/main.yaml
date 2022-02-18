@@ -1,9 +1,0 @@
----
-
-# These are the default values if none are given
-
-vpc_cidr: 10.0.0.0/14
-availZonePrefix: 18
-noACLZones: 3
-noAvailZones: 3
-subnetPrefix: 24

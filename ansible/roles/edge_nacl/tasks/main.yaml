@@ -134,3 +134,27 @@
     state: 'present'
   when: not naclExists
   register: infoReturned
+
+- name: Query AWS for all Network ACLs in region
+  community.aws.ec2_vpc_nacl_info:
+    profile: "{{awsProfile}}"
+    region: "{{awsRegion}}"
+  register: infoReturned
+
+- name: Filter list to the ones associated with this environment
+  set_fact:
+    naclList: "{{naclList | default([]) + [{'Name':name,'subnets':subnets,'id':nacl_id}]}}"
+  vars:
+    name: "{{item.tags.Name}}"
+    subnets: "{{item.subnets}}"
+    nacl_id: "{{item.nacl_id}}"
+    prefix: "{{ resourceGroup | lower }}-{{ edge | lower }}-"
+  loop: "{{infoReturned.nacls}}"
+  loop_control:
+    label: "{{item.nacl_id}}"
+  when: (item.tags.Name is defined) and (prefix is in item.tags.Name)
+  failed_when: infoReturned.nacls | length == 0
+
+- name: Add NACL information to inventory
+  set_fact:
+    inventory: "{{inventory | combine({'edge':{'nacl':naclList}}, recursive=True)}}"
