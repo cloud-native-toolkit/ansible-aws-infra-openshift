@@ -25,9 +25,13 @@
 
       $ vi ./group_vars/all
 
+1. Review the initial inventory file for what is to be created. 
+
+      $ vi ./inventory.yaml
+
 1. Run the ansible playbook
 
-      $ ansible-playbook ./site.yaml
+      $ ansible-playbook ./create.yaml
 
 
  ## DRAFT
