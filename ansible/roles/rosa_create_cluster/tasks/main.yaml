@@ -110,9 +110,6 @@
     response: "{{response_single_az}}"
   when: not multi_az
 
-- debug:
-    msg: "{{response}}"
-
 - name: Create management roles
   include_tasks:
     file: role_creation.yaml
