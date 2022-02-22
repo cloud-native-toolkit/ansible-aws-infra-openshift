@@ -1,3 +1,5 @@
+# Cloud Inventory
+
 inventory:
   edge:
     vpc: []
@@ -6,11 +8,11 @@ inventory:
     ngw: []
     nacl: []
     rtbs: []
-  mgmt: 
+  mgmt:
     rosa: []
-  wkld: 
+  wkld:
     rosa: []
-  pcxs: 
+  pcxs:
     edgeMgmt: []
     edgeWkld: []
     mgmtWkld: []

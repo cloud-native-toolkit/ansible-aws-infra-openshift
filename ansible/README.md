@@ -28,6 +28,10 @@ Should return information on the current VPCs for your default region.
 
         $ vi ./groups_vars/all
 
+1. Adjust the inventory file for what is to be created [inventory.yaml](./inventory.yaml)
+
+        $ vi ./inventory.yaml
+
 1. From the ansible directory run
 
         $ ansible-playbook ./site.yaml

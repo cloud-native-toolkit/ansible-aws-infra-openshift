@@ -7,6 +7,11 @@
     - include_vars:
         file: ./inventory.yaml
 
+    - name: Backup old inventory file
+      copy:
+        src: ./inventory.yaml
+        dest: ./inventory.yaml.old 
+
     - name: Get the current time
       command: date
       register: dateResponse
@@ -69,7 +74,7 @@
 
     - include_role:
         name: vpc_networking
-      when: inventory.pcxs | length > 0
+      when: (inventory.pcxs is defined) and (inventory.pcxs | length > 0)
 
     - include_role:
         name: edge_rtbs
@@ -82,6 +87,11 @@
     - name: Record current date
       set_fact:
         end_time: '{{dateResponse.stdout_lines[0]}}'
+
+    - name: Write updated inventory file
+      template:
+        src: ./templates/inventory.j2
+        dest: ./inventory.yaml
 
     - debug:
         msg: [
