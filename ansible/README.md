@@ -34,7 +34,7 @@ Should return information on the current VPCs for your default region.
 
 1. From the ansible directory run
 
-        $ ansible-playbook ./site.yaml
+        $ ansible-playbook ./create.yaml
 
 
 
