@@ -34,7 +34,6 @@
     pcxId: "{{ pcxs | json_query(query) }}"
   vars:
     query: "[?tags.Name == '{{pcxName}}'].vpc_peering_connection_id"
-  failed_when: pcxId | length > 1
 
 - name: Set exists to true if existing peering connection found
   set_fact:
@@ -86,6 +85,7 @@
     state: present
     tags:
       Name: "{{pcxName}}"
+      Resource: "{{envName}}"
   register: response
   failed_when: >
     (response.failed) or 

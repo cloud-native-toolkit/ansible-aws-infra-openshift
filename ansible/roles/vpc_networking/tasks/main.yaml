@@ -1,51 +1,54 @@
 ---
 
+# Create peering connection between edge and management VPC 
+
 - name: Set parameters for edge to management
   set_fact:
-    pcxList: "{{pcxList | default([]) + [{'Name': name, 'vpc1':vpc1, 'vpc2':vpc2}]}}"
+    inventory: "{{inventory | combine( {'pcxs':{'edge_mgmt':{'name': name, 'vpc1':vpc1, 'vpc2':vpc2}}}, recursive=True ) }}"
   vars:
     name: "{{resourceGroup|lower}}-{{edge|lower}}-{{management|lower}}-pcx"
-    vpc1: "{{resourceGroup|lower}}-{{edge|lower}}"
-    vpc2: "{{resourceGroup|lower}}-{{management|lower}}"
+    vpc1: "{{inventory.edge.vpc.name}}"
+    vpc2: "{{inventory.mgmt.vpc.name}}"
+  when: (inventory.pcxs.edge_mgmt is defined)
 
 - name: Create VPC Peer Connection Edge to Management
   include_role:
     name: create_pcx
   vars:
-    pcxName: "{{pcxList[0].Name}}"
-    vpc1Prefix: "{{pcxList[0].vpc1}}"
-    vpc2Prefix: "{{pcxList[0].vpc2}}"
+    pcxName: "{{inventory.pcxs.edge_mgmt.name}}"
+    vpc1Prefix: "{{inventory.edge.vpc.name}}"
+    vpc2Prefix: "{{inventory.mgmt.vpc.name}}"
+    envName: "{{resourceGroup|lower}}"
+  when: (inventory.pcxs.edge_mgmt is defined)
 
 - name: Amend pcxId to list for vpc1
   set_fact:
-    pcxList: "{{pcxList | map('combine',{'pcxId': peering_id})}}"
-  with_list: "{{pcxList}}"
+    inventory: "{{inventory | combine({'pcxs':{'edge_mgmt':{'id': peering_id}}}, recursive=True)}}"
+  when: (inventory.pcxs.edge_mgmt is defined)
+
+
+# Create peering connection between edge and workload VPC 
 
 - name: Set parameters for edge to workload
   set_fact:
-    pcxList1: "{{pcxList1 | default([]) + [{'Name': name, 'vpc1':vpc1, 'vpc2':vpc2}]}}"
+    inventory: "{{inventory | combine( {'pcxs':{'edge_wkld':{'name': name, 'vpc1':vpc1, 'vpc2':vpc2}}}, recursive=True ) }}"
   vars:
     name: "{{resourceGroup|lower}}-{{edge|lower}}-{{workload|lower}}-pcx"
     vpc1: "{{resourceGroup|lower}}-{{edge|lower}}"
     vpc2: "{{resourceGroup|lower}}-{{workload|lower}}"
+  when: (inventory.pcxs.edge_wkld is defined)
 
-- name: Create VPC Peer Connection Edge to Management
+- name: Create VPC Peer Connection Edge to Workload
   include_role:
     name: create_pcx
   vars:
-    pcxName: "{{pcxList1[0].Name}}"
-    vpc1Prefix: "{{pcxList1[0].vpc1}}"
-    vpc2Prefix: "{{pcxList1[0].vpc2}}"
+    pcxName: "{{inventory.pcxs.edge_wkld.name}}"
+    vpc1Prefix: "{{inventory.edge.vpc.name}}"
+    vpc2Prefix: "{{inventory.wkld.vpc.name}}"
+    envName: "{{resourceGroup|lower}}"
+  when: (inventory.pcxs.edge_wkld is defined)
 
 - name: Add pcxId to second entry
   set_fact:
-    pcxList1: "{{pcxList1 | map('combine',{'pcxId': peering_id})}}"
-
-- set_fact:
-    pcxList: "{{pcxList + pcxList1}}"
-
-- debug:
-    msg: "{{mgmt_pcx}}"
-  vars: 
-    mgmt_pcx: "{{pcxList | json_query(mgmtQuery)}}"
-    mgmtQuery: "[?starts_with(Name,'{{resourceGroup|lower}}-{{edge|lower}}-{{management|lower}}')].pcxId"
+    inventory: "{{inventory | combine({'pcxs':{'edge_wkld':{'id': peering_id}}}, recursive=True)}}"
+  when: (inventory.pcxs.edge_wkld is defined)

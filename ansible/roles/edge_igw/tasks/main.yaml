@@ -35,6 +35,7 @@
     igwName: "{{ igw_name }}"
     usrProfile: "{{ awsProfile }}"
     reqRegion: "{{ awsRegion }}"
+    envName: "{{ resourceGroup|lower }}"
   when: not igwExists
 
 - name: Append internet gateway id to the vpc dictionary information (already exists)

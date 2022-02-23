@@ -7,10 +7,10 @@
     - include_vars:
         file: ./inventory.yaml
 
-    - name: Backup old inventory file
-      copy:
-        src: ./inventory.yaml
-        dest: ./inventory.yaml.old 
+    - name: Validate entries and backup old inventory file
+      template:
+        src: ./templates/inventory.j2
+        dest: ./old_inventory.yaml
 
     - name: Get the current time
       command: date

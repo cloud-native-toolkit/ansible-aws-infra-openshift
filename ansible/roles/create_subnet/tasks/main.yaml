@@ -31,6 +31,7 @@
     region: "{{reqRegion}}"
     tags:
       Name: "{{subnetName}}"
+      Resource: "{{envName}}"
   register: returnedInfo_both
   tags: subnets
   when: (not defaultRegion) and (not defaultAZ)
@@ -43,6 +44,7 @@
     profile: "{{usrProfile}}"
     tags:
       Name: "{{subnetName}}"
+      Resource: "{{envName}}"
   register: returnedInfo_none
   tags: subnets
   when: (defaultRegion) and (defaultAZ)
@@ -56,6 +58,7 @@
     region: "{{reqRegion}}"
     tags:
       Name: "{{subnetName}}"
+      Resource: "{{envName}}"
   register: returnedInfo_az
   tags: subnets
   when: (not defaultRegion) and (defaultAZ)
@@ -69,6 +72,7 @@
     profile: "{{usrProfile}}"
     tags:
       Name: "{{subnetName}}"
+      Resource: "{{envName}}"
   register: returnedInfo_region
   tags: subnets
   when: (defaultRegion) and (not defaultAZ)

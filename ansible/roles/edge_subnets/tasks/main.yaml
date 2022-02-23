@@ -7,21 +7,21 @@
 - name: Create dictionary of ingress subnets to be created
   set_fact:
     subnetDict: "{{ subnetDict | default([]) + [{ 'Name': resourceGroup|lower+'-'+edge|lower+'-ingress'+loop_index|string, 'CIDR': item, 'AZ': availZones[loop_index] }] }}"
-  loop: "{{ingressSubnets}}"
+  loop: "{{inventory.edge.cidr.ingress.subnets}}"
   loop_control:
     index_var: loop_index
 
 - name: Add bastion subnets to dictionary
   set_fact:
     subnetDict: "{{ subnetDict | default([]) + [{ 'Name': resourceGroup|lower+'-'+edge|lower+'-bastion'+loop_index|string, 'CIDR': item, 'AZ': availZones[loop_index] }] }}"
-  loop: "{{bastionSubnets}}"
+  loop: "{{inventory.edge.cidr.bastion.subnets}}"
   loop_control:
     index_var: loop_index
 
 - name: Add egress subnets to dictionary
   set_fact:
     subnetDict: "{{ subnetDict | default([]) + [{ 'Name': resourceGroup|lower+'-'+edge|lower+'-egress'+loop_index|string, 'CIDR': item, 'AZ': availZones[loop_index] }] }}"
-  loop: "{{egressSubnets}}"
+  loop: "{{inventory.edge.cidr.egress.subnets}}"
   loop_control:
     index_var: loop_index
 
@@ -67,6 +67,7 @@
     subnetName: "{{item.Name}}"
     usrProfile: "{{awsProfile}}"
     reqRegion: "{{awsRegion}}"
+    envName: "{{resourceGroup|lower}}"
   when: not item.Exists
   loop: "{{subnetDict}}"
 
@@ -96,7 +97,7 @@
 
 - name: Create clean list of subnets
   set_fact:
-    newSubnetList: "{{newSubnetList | default([]) + [{ 'Name':item.Name, 'cidr':item.CIDR, 'Availability_Zone':item.AZ, 'id': item.subnet_id}] }}"
+    newSubnetList: "{{newSubnetList | default([]) + [{ 'name':item.Name, 'cidr':item.CIDR, 'availability_zone':item.AZ, 'id': item.subnet_id}] }}"
   loop: "{{subnetDict}}"
 
 - name: Write subnet details to inventory

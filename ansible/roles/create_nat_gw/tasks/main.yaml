@@ -18,6 +18,7 @@
     wait: "{{wait_for_complete}}"
     tags:
       Name: "{{ngwName}}"
+      Resource: "{{envName}}"
   register: returnedInfo_region
   when: not defaultRegion
 
@@ -28,6 +29,7 @@
     wait: "{{wait_for_complete}}"
     tags:
       Name: "{{ngwName}}"
+      Resource: "{{envName}}"
   register: returnedInfo_default
   when: defaultRegion
 

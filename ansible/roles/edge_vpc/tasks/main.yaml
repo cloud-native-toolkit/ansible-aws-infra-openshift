@@ -39,11 +39,14 @@
   vars:
     # These variable are defined in the global_vars file
     envName: "{{resourceGroup|lower}}"
-    vpcName: "{{edge|lower}}"
+    vpcName: "{{resourceGroup|lower}}-{{edge|lower}}-vpc"
     usrProfile: "{{awsProfile}}"
     reqRegion: "{{awsRegion|default(omit)}}"
     # The cidr_block is obtained from the earlier subnet calcs - only create with egress CIDR
-    cidr_block: "{{aclSubnets}}"
+    cidr_block:
+      - "{{inventory.edge.cidr.ingress}}"
+      - "{{inventory.edge.cidr.bastion}}"
+      - "{{inventory.edge.cidr.egress}}"
   when: not vpcExists
 
 - name: Set facts of created VPC
@@ -57,5 +60,8 @@
   vars:
     vpcDetails: 
       name: "{{edgeVpc.tags.Name}}"
-      cidr: "{{aclSubnets}}"
+      cidr: 
+        - "{{inventory.edge.cidr.ingress}}"
+        - "{{inventory.edge.cidr.bastion}}"
+        - "{{inventory.edge.cidr.egress}}"
       id: "{{edgeVpc.id}}"

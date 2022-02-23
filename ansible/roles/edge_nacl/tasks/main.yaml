@@ -11,9 +11,9 @@
 
 - name: Create list of subnets for ingress Network ACL
   set_fact:
-    ingressSubnets: "{{ ingressSubnets }} + [ '{{ item.subnet_id }}' ]"
-  loop: "{{subnetDict}}"
-  when: '"ingress" in item.Name'
+    ingressSubnets: "{{ ingressSubnets }} + [ '{{ item.id }}' ]"
+  loop: "{{inventory.edge.subnets}}"
+  when: '"ingress" in item.name'
 
 - name: Query AWS for all Network ACLs in region
   community.aws.ec2_vpc_nacl_info:
@@ -23,19 +23,13 @@
       'tag:Name': '{{resourceGroup|lower}}-{{edge|lower}}-ingress-nacl'
   register: infoReturned
 
-- name: Set exists to true if NACL exists
+- name: Set fact for existence or not of ingress NACLs
   set_fact:
-    naclExists: True
-  when: infoReturned.nacls|length > 0
-
-- name: Set exists to false if NACL does not exist
-  set_fact:
-    naclExists: False
-  when: infoReturned.nacls|length == 0
+    naclExists: "{{ False if(infoReturned.nacls|length == 0) else True }}"
 
 - name: Create Ingress Network ACL and associate with subnets
   community.aws.ec2_vpc_nacl:
-    vpc_id: "{{edgeVpc.id}}"
+    vpc_id: "{{inventory.edge.vpc.id}}"
     name: '{{resourceGroup|lower}}-{{edge|lower}}-ingress-nacl'
     subnets: "{{ingressSubnets}}"
     ingress:
@@ -55,9 +49,9 @@
 
 - name: Create list of subnets for bastion Network ACL
   set_fact:
-    bastionSubnets: "{{ bastionSubnets }} + [ '{{ item.subnet_id }}' ]"
-  loop: "{{subnetDict}}"
-  when: '"bastion" in item.Name'
+    bastionSubnets: "{{ bastionSubnets }} + [ '{{ item.id }}' ]"
+  loop: "{{inventory.edge.subnets}}"
+  when: '"bastion" in item.name'
 
 - name: Query AWS for all Network ACLs in region
   community.aws.ec2_vpc_nacl_info:
@@ -67,19 +61,13 @@
       'tag:Name': '{{resourceGroup|lower}}-{{edge|lower}}-bastion-nacl'
   register: infoReturned
 
-- name: Set exists to true if NACL exists
+- name: Set fact for existence or not of bastion NACLs
   set_fact:
-    naclExists: True
-  when: infoReturned.nacls|length > 0
-
-- name: Set exists to false if NACL does not exist
-  set_fact:
-    naclExists: False
-  when: infoReturned.nacls|length == 0
+    naclExists: "{{ False if(infoReturned.nacls|length == 0) else True }}"
 
 - name: Create Bastion Network ACL and associate with subnets
   community.aws.ec2_vpc_nacl:
-    vpc_id: "{{edgeVpc.id}}"
+    vpc_id: "{{inventory.edge.vpc.id}}"
     name: '{{resourceGroup|lower}}-{{edge|lower}}-bastion-nacl'
     subnets: "{{bastionSubnets}}"
     ingress:
@@ -99,9 +87,9 @@
 
 - name: Create list of subnets for egress Network ACL
   set_fact:
-    egressSubnets: "{{ egressSubnets }} + [ '{{ item.subnet_id }}' ]"
-  loop: "{{subnetDict}}"
-  when: '"egress" in item.Name'
+    egressSubnets: "{{ egressSubnets }} + [ '{{ item.id }}' ]"
+  loop: "{{inventory.edge.subnets}}"
+  when: '"egress" in item.name'
 
 - name: Query AWS for all Network ACLs in region
   community.aws.ec2_vpc_nacl_info:
@@ -111,19 +99,13 @@
       'tag:Name': '{{resourceGroup|lower}}-{{edge|lower}}-egress-nacl'
   register: infoReturned
 
-- name: Set exists to true if NACL exists
+- name: Set fact for existence or not of egress NACLs
   set_fact:
-    naclExists: True
-  when: infoReturned.nacls|length > 0
-
-- name: Set exists to false if NACL does not exist
-  set_fact:
-    naclExists: False
-  when: infoReturned.nacls|length == 0
+    naclExists: "{{ False if(infoReturned.nacls|length == 0) else True }}"
 
 - name: Create Egress Network ACL and associate with subnets
   community.aws.ec2_vpc_nacl:
-    vpc_id: "{{edgeVpc.id}}"
+    vpc_id: "{{inventory.edge.vpc.id}}"
     name: '{{resourceGroup|lower}}-{{edge|lower}}-egress-nacl'
     subnets: "{{egressSubnets}}"
     ingress:

@@ -13,12 +13,12 @@
 
 - name: Create VPC with specified region
   amazon.aws.ec2_vpc_net:
-    name: "{{envName}}-{{vpcName}}-vpc"
+    name: "{{vpcName}}"
     cidr_block: "{{cidr_block}}"
     region: "{{reqRegion}}"
     profile: "{{usrProfile}}"
     tags:
-      environment: "{{envName}}"
+      Resource: "{{envName}}"
     tenancy: default
   register: returnedInfo_region
   tags: vpc
@@ -26,11 +26,11 @@
 
 - name: Create VPC using profile default region
   amazon.aws.ec2_vpc_net:
-    name: "{{envName}}-{{vpcName}}-vpc"
+    name: "{{vpcName}}"
     cidr_block: "{{cidr_block}}"
     profile: "{{usrProfile}}"
     tags:
-      environment: "{{envName}}"
+      Resource: "{{envName}}"
     tenancy: default
   register: returnedInfo_default
   tags: vpc

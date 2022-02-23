@@ -8,31 +8,31 @@
 
 - name: Clear variable
   set_fact:
-    newRTBs: []
+    ingressRTBs: []
+    bastionRTBs: []
+    egressRTBs: []
 
-- name: Find subnets for ingress routes tables
+- name: Create list of required ingress routes tables
   set_fact:
-    newRTBs: "{{newRTBs | default([]) + [{ 'Subnet_id':item.subnet_id }]}}"
-  loop: "{{subnetDict}}"
-  when: '"ingress" in item.Name'
-
-- name: Create list of ingress route tables to be created
-  set_fact:
-    ingressRTBs: "{{ ingressRTBs | default([]) + [{ 'Name':name, 'Subnet_id':item.Subnet_id }] }}"
-  loop: "{{newRTBs}}"
+    ingressRTBs: "{{ingressRTBs | default([]) + [{ 'name':name, 'subnet_id':item.id }]}}"
+  loop: "{{inventory.edge.subnets}}"
   loop_control:
     index_var: idx
+    label: "{{ item.name }}"
   vars:
     name: "{{resourceGroup|lower}}-{{edge|lower}}-ingress-rtb-{{idx|string}}"
+  when: '"ingress" in item.name'
 
 - name: Query AWS for existence of ingress route tables
   amazon.aws.ec2_vpc_route_table_info:
     filters:
-      vpc-id: "{{ edgeVpc.id }}"
-      "tag:Name": "{{item.Name}}"
+      vpc-id: "{{ inventory.edge.vpc.id }}"
+      "tag:Name": "{{item.name}}"
     profile: "{{awsProfile}}"
     region: "{{awsRegion}}"
   loop: "{{ingressRTBs}}"
+  loop_control:
+    label: "{{item.name}}"
   register: infoReturned
 
 - name: Clear variable
@@ -41,19 +41,21 @@
 
 - name: Parse return from query for existence of ingress route tables
   set_fact:
-    newRTBs: "{{ newRTBs | default([]) + [{ 'Name':item.Name, 'Subnet_id':item.Subnet_id, 'Exists':True }] }}"
+    newRTBs: "{{ newRTBs | default([]) + [{ 'name':item.name, 'subnet_id':item.subnet_id, 'exists':True }] }}"
   when: infoReturned.results[idx].route_tables | length > 0
   loop: "{{ingressRTBs}}"
   loop_control:
     index_var: idx
+    label: "{{item.name}}"
 
 - name: Parse return from query for non-existence of ingress route tables
   set_fact:
-    newRTBs: "{{ newRTBs | default([]) + [{ 'Name':item.Name, 'Subnet_id':item.Subnet_id, 'Exists':False }] }}"
+    newRTBs: "{{ newRTBs | default([]) + [{ 'name':item.name, 'subnet_id':item.subnet_id, 'exists':False }] }}"
   when: infoReturned.results[idx].route_tables | length == 0
   loop: "{{ingressRTBs}}"
   loop_control:
     index_var: idx
+    label: "{{item.name}}"
 
 - name: Create new list with parse results
   set_fact:
@@ -61,51 +63,46 @@
 
 - name: Create ingress route table if it does not exist
   amazon.aws.ec2_vpc_route_table:
-    vpc_id: "{{ edgeVpc.id }}"
+    vpc_id: "{{ inventory.edge.vpc.id }}"
     region: "{{ awsRegion }}"
     profile: "{{ awsProfile }}"
     tags:
-      Name: "{{item.Name}}"
-    subnets: "{{ item.Subnet_id }}"
+      Name: "{{item.name}}"
+      Resource: "{{resourceGroup|lower}}"
+    subnets: "{{ item.subnet_id }}"
     routes:
-      - dest: "{{ aclSubnets[0] }}"  # Ingress i.e. local traffic
+      - dest: "{{ inventory.edge.cidrs.ingress.cidr }}"  # Ingress i.e. local traffic
         gateway_id: 'local'
-      - dest: "{{ aclSubnets[1]}}"   # Bastion
+      - dest: "{{ inventory.edge.cidrs.bastion.cidr }}"   # Bastion
         gateway_id: 'local'
-      - dest: '0.0.0.0/0'
-        gateway_id: "{{ edgeVpc.igw_id }}"
-  when: not item.Exists
+      - dest: '0.0.0.0/0'     # For return route of connections
+        gateway_id: "{{ inventory.edge.igw.id }}"
+  when: not item.exists
   loop: "{{ingressRTBs}}"
 
 ## Create bastion subnet route table and assign to subnets
 
-- name: Clear variables
-  set_fact:
-    newRTBs: []
-
 - name: Find subnets for bastion routes tables
   set_fact:
-    newRTBs: "{{newRTBs | default([]) + [{ 'Subnet_id':item.subnet_id }]}}"
-  loop: "{{subnetDict}}"
-  when: '"bastion" in item.Name'
-
-- name: Create list of bastion route tables to be created
-  set_fact:
-    bastionRTBs: "{{ bastionRTBs | default([]) + [{ 'Name': name, 'Subnet_id':item.Subnet_id }] }}"
-  loop: "{{newRTBs}}"
-  loop_control:
+    bastionRTBs: "{{ bastionRTBs | default([]) + [{ 'name': name, 'subnet_id':item.id }]}}"
+  loop: "{{inventory.edge.subnets}}"
+  loop_control: 
+    label: "{{ item.name }}"
     index_var: idx
   vars:
     name: "{{resourceGroup|lower}}-{{edge|lower}}-bastion-rtb-{{idx|string}}"
+  when: '"bastion" in item.name'
 
 - name: Query AWS for existence of bastion route tables
   amazon.aws.ec2_vpc_route_table_info:
     filters:
-      vpc-id: "{{ edgeVpc.id }}"
-      "tag:Name": "{{item.Name}}"
+      vpc-id: "{{ inventory.edge.vpc.id }}"
+      "tag:Name": "{{item.name}}"
     profile: "{{awsProfile}}"
     region: "{{awsRegion}}"
   loop: "{{bastionRTBs}}"
+  loop_control:
+    label: "{{item.name}}"
   register: infoReturned
 
 - name: Clear variables
@@ -114,19 +111,21 @@
 
 - name: Parse return from query for existence of ingress route tables
   set_fact:
-    newRTBs: "{{ newRTBs | default([]) + [{ 'Name':item.Name, 'Subnet_id':item.Subnet_id, 'Exists':True }] }}"
+    newRTBs: "{{ newRTBs | default([]) + [{ 'name':item.name, 'subnet_id':item.subnet_id, 'exists':True }] }}"
   when: infoReturned.results[idx].route_tables | length > 0
   loop: "{{bastionRTBs}}"
   loop_control:
     index_var: idx
+    label: "{{item.name}}"
 
 - name: Parse return from query for non-existence of ingress route tables
   set_fact:
-    newRTBs: "{{ newRTBs | default([]) + [{ 'Name':item.Name, 'Subnet_id':item.Subnet_id, 'Exists':False }] }}"
+    newRTBs: "{{ newRTBs | default([]) + [{ 'name':item.name, 'subnet_id':item.subnet_id, 'exists':False }] }}"
   when: infoReturned.results[idx].route_tables | length == 0
   loop: "{{bastionRTBs}}"
   loop_control:
     index_var: idx
+    label: "{{item.name}}"
 
 - name: Replace existing list with new list
   set_fact:
@@ -134,54 +133,70 @@
 
 - name: Create bastion route table if it does not exist
   amazon.aws.ec2_vpc_route_table:
-    vpc_id: "{{ edgeVpc.id }}"
+    vpc_id: "{{ inventory.edge.vpc.id }}"
     region: "{{ awsRegion }}"
     profile: "{{ awsProfile }}"
     tags:
-      Name: "{{item.Name}}"
-    subnets: "{{ item.Subnet_id }}"
+      Name: "{{item.name}}"
+      Resource: "{{resourceGroup|lower}}"
+    subnets: "{{ item.subnet_id }}"
     routes:
-      - dest: "{{ aclSubnets[0] }}"  # Ingress for return connections
+      - dest: "{{ inventory.edge.cidrs.ingress.cidr }}"  # Ingress for return connections
         gateway_id: 'local'
-      - dest: "{{ aclSubnets[1]}}"   # Bastion i.e. local traffic
+      - dest: "{{ inventory.edge.cidrs.bastion.cidr }}"   # Bastion i.e. local traffic
         gateway_id: 'local'
-  when: not item.Exists
+      - dest: "{{ inventory.mgmt.vpc.cidr }}"             # Bastion to management VPC
+        gateway_id: "{{ inventory.pcxs.edge_mgmt.id }}"
+      - dest: "{{ inventory.wkld.vpc.cidr }}"             # Bastion to edge VPC
+        gateway_id: "{{ inventory.pcxs.edge_wkld.id }}"
+  when: not item.exists
   loop: "{{bastionRTBs}}"
+  loop_control:
+    label: "{{item.name}}"
 
 ## Create egress subnet route table and assign to subnets
 
 - name: Build list of egress routes from NAT Gateway list
   set_fact:
-    egressRTBs: "{{egressRTBs | default ([]) + [{ 'Name':resourceGroup|lower + '-' + edge|lower + '-egress-rtb-' + idx|string, 'Subnet_id':item.Subnet_id, 'NAT_GW_id':item.NAT_GW_id }] }}"
-  loop: "{{ natGWDict }}"
+    egressRTBs: "{{egressRTBs | default ([]) + [{ 'name':resourceGroup|lower + '-' + edge|lower + '-egress-rtb-' + idx|string, 'subnet_id':item.subnet_id, 'ngw_id':item.id }] }}"
+  loop: "{{ inventory.edge.ngw }}"
   loop_control:
     index_var: idx
+    label: "{{ item.name }}"
 
 - name: Query AWS for existence of egress route tables
   amazon.aws.ec2_vpc_route_table_info:
     filters:
-      vpc-id: "{{ edgeVpc.id }}"
-      "tag:Name": "{{item.Name}}"
+      vpc-id: "{{ inventory.edge.vpc.id }}"
+      "tag:Name": "{{item.name}}"
     profile: "{{awsProfile}}"
     region: "{{awsRegion}}"
   loop: "{{egressRTBs}}"
+  loop_control:
+    label: "{{ item.name }}"
   register: infoReturned
 
 - name: Parse return from query for existence of route tables
   set_fact:
-    newList: "{{ newList | default([]) + [{'Name':item.Name,'Subnet_id':item.Subnet_id, 'NAT_GW_id':item.NAT_GW_id,'Exists':True}] }}"
+    newList: "{{ newList | default([]) + [{'name':item.name, 'subnet_id':item.subnet_id, 'ngw_id':item.ngw_id, 'exists':True}] }}"
   when: infoReturned.results[idx].route_tables | length > 0
   loop: "{{egressRTBs}}"
   loop_control:
     index_var: idx
+    label: "{{ item.name }}"
+
+- debug:
+    msg: "{{newList}}"
+  when: newList is defined
 
 - name: Parse return from query for non-existence of route tables
   set_fact:
-    newList: "{{ newList | default([]) + [{'Name':item.Name,'Subnet_id':item.Subnet_id, 'NAT_GW_id':item.NAT_GW_id,'Exists':False}] }}"
+    newList: "{{ newList | default([]) + [{'name':item.name, 'subnet_id':item.subnet_id, 'ngw_id':item.ngw_id, 'exists':False}] }}"
   when: infoReturned.results[idx].route_tables | length == 0
   loop: "{{egressRTBs}}"
   loop_control:
     index_var: idx
+    label: "{{ item.name }}"
 
 - name: Replace existing list with new one that includes status
   set_fact:
@@ -189,20 +204,38 @@
 
 - name: Create egress route table for each subnet with each NAT Gateway
   amazon.aws.ec2_vpc_route_table:
-    vpc_id: "{{ edgeVpc.id }}"
+    vpc_id: "{{ inventory.edge.vpc.id }}"
     region: "{{ awsRegion }}"
     profile: "{{ awsProfile }}"
     tags:
-      Name: "{{item.Name}}"
-    subnets: "{{ item.Subnet_id }}"
+      Name: "{{ item.name }}"
+      Resource: "{{resourceGroup|lower}}"
+    subnets: "{{ item.subnet_id }}"
     routes:
-#      - dest: "{{ management_cidr }}"  # VPC for return connections
-#        gateway_id: 'local'     # This needs to be modified to the VPC Peer Connection when it is available
-#      - dest: "{{ workload_cidr }}"  # VPC for return connections
-#        gateway_id: 'local'     # This needs to be modified to the VPC Peer Connection when it is available
-      - dest: "{{ aclSubnets[2]}}"   # Egress i.e. local traffic
+      - dest: "{{ inventory.mgmt.vpc.cidr }}"  # VPC for return connections
+        gateway_id: "{{ inventory.pcxs.edge_mgmt.id }}"     
+      - dest: "{{ inventory.wkld.vpc.cidr }}"  # VPC for return connections
+        gateway_id: "{{ inventory.pcxs.edge_wkld.id }}"     
+      - dest: "{{ inventory.edge.cidrs.egress.cidr }}"   # Egress i.e. local traffic
         gateway_id: 'local'
       - dest: '0.0.0.0/0'
-        gateway_id: "{{ item.NAT_GW_id }}"   # Needs debugging - gives an error that this is an invalid id
-  when: not item.Exists
+        gateway_id: "{{ item.ngw_id }}"   
+  when: not item.exists
   loop: "{{ egressRTBs }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+## Output routes tables to inventory
+
+- name: Query AWS for existence of route tables with resource tag in edge VPC
+  amazon.aws.ec2_vpc_route_table_info:
+    filters:
+      vpc-id: "{{ inventory.edge.vpc.id }}"
+      "tag:Resource": "{{resourceGroup|lower}}"
+    profile: "{{awsProfile}}"
+    region: "{{awsRegion}}"
+  register: infoReturned
+
+- name: Add route table information to inventory
+  set_fact:
+    inventory: "{{inventory | combine({'edge':{'rtbs':infoReturned.route_tables}}, recursive=True)}}"
