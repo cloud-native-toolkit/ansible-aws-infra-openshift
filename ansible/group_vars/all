@@ -6,15 +6,15 @@
 awsProfile: default
 
 # Region into which to deploy
-awsRegion: us-east-1
+awsRegion: ap-southeast-2
 
 # Availability zones (these must be part of the region previously defined). Minimum one zone must be specified.
 availZones:
-  - 'us-east-1a'
+  - 'ap-southeast-2a'
 
 # Name tag for the elements that will be created
 # Elements are named resourceGroup-edge-item_name-0
-resourceGroup: mycloud
+resourceGroup: recloud
 edge: edge
 management: mgmt
 workload: wkld

@@ -44,9 +44,9 @@
     reqRegion: "{{awsRegion|default(omit)}}"
     # The cidr_block is obtained from the earlier subnet calcs - only create with egress CIDR
     cidr_block:
-      - "{{inventory.edge.cidr.ingress}}"
-      - "{{inventory.edge.cidr.bastion}}"
-      - "{{inventory.edge.cidr.egress}}"
+      - "{{inventory.edge.cidrs.ingress.cidr}}"
+      - "{{inventory.edge.cidrs.bastion.cidr}}"
+      - "{{inventory.edge.cidrs.egress.cidr}}"
   when: not vpcExists
 
 - name: Set facts of created VPC
@@ -61,7 +61,7 @@
     vpcDetails: 
       name: "{{edgeVpc.tags.Name}}"
       cidr: 
-        - "{{inventory.edge.cidr.ingress}}"
-        - "{{inventory.edge.cidr.bastion}}"
-        - "{{inventory.edge.cidr.egress}}"
+        - "{{inventory.edge.cidrs.ingress.cidr}}"
+        - "{{inventory.edge.cidrs.bastion.cidr}}"
+        - "{{inventory.edge.cidrs.egress.cidr}}"
       id: "{{edgeVpc.id}}"

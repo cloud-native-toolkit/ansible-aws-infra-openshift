@@ -45,5 +45,3 @@
 - name: Add egress subnet CIDRs to inventory
   set_fact:
     inventory: "{{inventory | combine({'edge': {'cidrs': {'egress': {'subnets':cidrReturn.stdout_lines}}}}, recursive=True) }}"
-
-
