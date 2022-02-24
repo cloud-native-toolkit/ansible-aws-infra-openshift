@@ -4,10 +4,8 @@
 
 # Input variables:
 # pcxName
-# vpc1Prefix
-# vpc2Prefix
-# vpc1_id (optional)
-# vpc2_id (optional)
+# vpc1Name
+# vpc2Name
 
 # Return values
 #
@@ -46,35 +44,25 @@
     query: "[?tags.Name == '{{pcxName}}'].status.code"
   when: pcxExists
 
-- name: Get VPC Details if either is missing
+- name: Get VPC Details if Peer Connection does not exist
   amazon.aws.ec2_vpc_net_info:
+    profile: "{{awsProfile|default(omit)}}"
+    region: "{{awsRegion|default(omit)}}"
+    filters:
+      "tag:Resource": "{{resourceGroup|lower}}"
   register: response
   failed_when: response.failed
-  when: ((vpc1_id is not defined) or (vpc2_id is not defined)) and (not pcxExists)
-
-- name: Filter VPC with Name key tag
-  set_fact:
-    vpcs: "{{ vpcs | default([]) + [item] }}"
-  loop: "{{response.vpcs}}"
-  loop_control:
-    label: "{{item.vpc_id}}"
-  when: ((vpc1_id is not defined) or (vpc2_id is not defined)) and (item.tags.Name is defined) and (not pcxExists)
+  when: not pcxExists
 
 - name: Query response for first VPC id
   set_fact:
-    vpc1_id: "{{ vpcs | json_query(query)}}"
+    vpc1_id: "{{ response.vpcs | json_query(query1)}}"
+    vpc2_id: "{{ response.vpcs | json_query(query2)}}"
   vars:
-    query: "[?starts_with(tags.Name,'{{vpc1Prefix}}')].vpc_id"
-  when: (vpc1_id is not defined) and (not pcxExists)
-  failed_when: vpc1_id | length != 1
-
-- name: Query response for second VPC id
-  set_fact:
-    vpc2_id: "{{ vpcs | json_query(query)}}"
-  vars:
-    query: "[?starts_with(tags.Name,'{{vpc2Prefix}}')].vpc_id"
-  when: (vpc2_id is not defined) and (not pcxExists)
-  failed_when: vpc2_id | length != 1
+    query1: "[?contains(tags.Name,'{{vpc1Name}}')].vpc_id"
+    query2: "[?contains(tags.Name,'{{vpc2Name}}')].vpc_id"
+  when: not pcxExists
+  failed_when: (vpc1_id | length != 1) or (vpc2_id | length != 1)
 
 - name: Create VPC peer between VPC1 and VPC2
   community.aws.ec2_vpc_peer:

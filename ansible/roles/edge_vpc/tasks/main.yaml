@@ -65,3 +65,4 @@
         - "{{inventory.edge.cidrs.bastion.cidr}}"
         - "{{inventory.edge.cidrs.egress.cidr}}"
       id: "{{edgeVpc.id}}"
+      state: "{{edgeVpc.state}}"

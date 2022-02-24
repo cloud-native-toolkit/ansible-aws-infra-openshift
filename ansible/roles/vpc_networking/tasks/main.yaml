@@ -16,8 +16,8 @@
     name: create_pcx
   vars:
     pcxName: "{{inventory.pcxs.edge_mgmt.name}}"
-    vpc1Prefix: "{{inventory.edge.vpc.name}}"
-    vpc2Prefix: "{{inventory.mgmt.vpc.name}}"
+    vpc1Name: "{{inventory.edge.vpc.name}}"
+    vpc2Name: "{{inventory.mgmt.vpc.name}}"
     envName: "{{resourceGroup|lower}}"
   when: (inventory.pcxs.edge_mgmt is defined)
 
@@ -34,8 +34,8 @@
     inventory: "{{inventory | combine( {'pcxs':{'edge_wkld':{'name': name, 'vpc1':vpc1, 'vpc2':vpc2}}}, recursive=True ) }}"
   vars:
     name: "{{resourceGroup|lower}}-{{edge|lower}}-{{workload|lower}}-pcx"
-    vpc1: "{{resourceGroup|lower}}-{{edge|lower}}"
-    vpc2: "{{resourceGroup|lower}}-{{workload|lower}}"
+    vpc1: "{{inventory.edge.vpc.name}}"
+    vpc2: "{{inventory.wkld.vpc.name}}"
   when: (inventory.pcxs.edge_wkld is defined)
 
 - name: Create VPC Peer Connection Edge to Workload
@@ -43,8 +43,8 @@
     name: create_pcx
   vars:
     pcxName: "{{inventory.pcxs.edge_wkld.name}}"
-    vpc1Prefix: "{{inventory.edge.vpc.name}}"
-    vpc2Prefix: "{{inventory.wkld.vpc.name}}"
+    vpc1Name: "{{inventory.edge.vpc.name}}"
+    vpc2Name: "{{inventory.wkld.vpc.name}}"
     envName: "{{resourceGroup|lower}}"
   when: (inventory.pcxs.edge_wkld is defined)
 

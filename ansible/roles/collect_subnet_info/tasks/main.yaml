@@ -1,0 +1,34 @@
+---
+
+# Edge VPC
+
+- name: Get Edge VPC subnet info if missing
+  include_tasks:
+    file: get_subnet_info.yaml
+  vars:
+    vpc_id: "{{inventory.edge.vpc.id}}"
+    resource: "{{resourceGroup|lower}}"
+    vpc: "edge"
+  when: (inventory.edge.subnets is not defined) or (inventory.edge.subnets | length == 0)
+
+# Management VPC
+
+- name: Get Management VPC subnet info if missing
+  include_tasks:
+    file: get_subnet_info.yaml
+  vars:
+    vpc_id: "{{inventory.mgmt.vpc.id}}"
+    resource: "{{resourceGroup|lower}}"
+    vpc: "mgmt"
+  when: (inventory.mgmt.subnets is not defined) or (inventory.mgmt.subnets | length == 0)
+
+# Workload VPC
+
+- name: Get Workload VPC subnet info if missing
+  include_tasks:
+    file: get_subnet_info.yaml
+  vars:
+    vpc_id: "{{inventory.wkld.vpc.id}}"
+    resource: "{{resourceGroup|lower}}"
+    vpc: "wkld"
+  when: (inventory.wkld.subnets is not defined) or (inventory.wkld.subnets | length == 0)

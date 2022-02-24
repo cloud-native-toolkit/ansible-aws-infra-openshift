@@ -73,8 +73,22 @@
       when: inventory.wkld.rosa is defined  
 
     - include_role:
+        name: collect_vpc_info
+      when: >
+        (inventory.edge.vpc is not defined) or (inventory.edge.vpc | length == 0) or
+        (inventory.mgmt.vpc is not defined) or (inventory.mgmt.vpc | length == 0) or
+        (inventory.wkld.vpc is not defined) or (inventory.wkld.vpc | length == 0)
+
+    - include_role:
         name: vpc_networking
       when: (inventory.pcxs is defined) and (inventory.pcxs | length > 0)
+
+    - include_role:
+        name: collect_subnet_info
+      when: >
+        (inventory.edge.subnets is not defined) or (inventory.edge.subnets | length == 0) or
+        (inventory.mgmt.subnets is not defined) or (inventory.mgmt.subnets | length == 0) or
+        (inventory.wkld.subnets is not defined) or (inventory.wkld.subnets | length == 0)
 
     - include_role:
         name: edge_rtbs

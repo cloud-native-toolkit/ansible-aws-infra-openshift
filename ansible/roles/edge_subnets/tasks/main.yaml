@@ -29,7 +29,7 @@
 - name: Query AWS for existence of subnets
   amazon.aws.ec2_vpc_subnet_info:
     filters: 
-      vpc-id: "{{edgeVpc.id}}"
+      vpc-id: "{{inventory.edge.vpc.id}}"
       "tag:Name": "{{item.Name}}"
   loop: "{{ subnetDict }}"
   register: subnet_info
@@ -61,7 +61,7 @@
   include_role: 
     name: create_subnet
   vars:
-    vpcId: "{{ edgeVpc.id }}"
+    vpcId: "{{ inventory.edge.vpc.id }}"
     cidr: "{{ item.CIDR }}"
     reqAZ: "{{ item.AZ }}"
     subnetName: "{{item.Name}}"
@@ -75,30 +75,26 @@
 - name: Query all subnets
   amazon.aws.ec2_vpc_subnet_info:
     filters: 
-      vpc-id: "{{edgeVpc.id}}"
-      "tag:Name": "{{item.Name}}"
-  loop: "{{ subnetDict }}"
+      vpc-id: "{{ inventory.edge.vpc.id }}"
+      "tag:Resource": "{{resourceGroup|lower}}"
   register: subnet_info
 
 - name: Parse returned data from AWS to determine subnet existance and create new list of subnet data
   set_fact:
-    newSubnetList: "{{ newSubnetList | default([]) + [{ 'Name':item.Name, 'CIDR': item.CIDR, 'AZ': item.AZ, 'Exists': True, 'subnet_id': id }] }}"
-  when: subnet_info.results[idx].subnets | length > 0
+    newSubnetList: "{{newSubnetList | default([]) + [{'name':subnet_name,'avialability_zone':az, 'cidr':cidr, 'id':subnet_id, 'state':state}] }}"
   vars:
-    id: "{{ subnet_info.results[idx].subnets[0].id }}"
-  loop: "{{subnetDict}}"
+    subnet_name: "{{item.tags.Name}}"
+    az: "{{item.availability_zone}}"
+    cidr: "{{item.cidr_block}}"
+    subnet_id: "{{item.id}}"
+    state: "{{item.state}}"
+  loop: "{{subnet_info.subnets}}"
   loop_control:
-    index_var: idx
+    label: "{{item.id}}"
 
 - name: Replace existing subnet information with new list
   set_fact:
     subnetDict: "{{ newSubnetList }}"
-    newSubnetList: []
-
-- name: Create clean list of subnets
-  set_fact:
-    newSubnetList: "{{newSubnetList | default([]) + [{ 'name':item.Name, 'cidr':item.CIDR, 'availability_zone':item.AZ, 'id': item.subnet_id}] }}"
-  loop: "{{subnetDict}}"
 
 - name: Write subnet details to inventory
   set_fact:

@@ -1,0 +1,36 @@
+---
+
+- name: Get VPC detail
+  amazon.aws.ec2_vpc_net_info:
+    profile: "{{awsProfile|default(omit)}}"
+    region: "{{awsRegion|default(omit)}}"
+    filters:
+      "tag:Resource": "{{resource}}"
+      "tag:Name": "{{vpc_name}}"
+  register: returnedInfo
+  failed_when:
+   - (returnedInfo.vpcs is defined) and (returnedInfo.vpcs | length > 1)
+   - (returnedInfo.vpcs is defined) and (returnedInfo.vpcs | length == 0)
+   - not returnedInfo.failed
+  ignore_errors: true
+
+- name: Fail if more than one entry is returned
+  fail:
+    msg: "ERROR: More than one entry with {{vpc_name}}"
+  when: (returnedInfo.vpcs is defined) and (returnedInfo.vpcs | length > 1)
+
+- name: Fail if no entries are returned
+  fail:
+    msg: "ERROR: No VPC entry found for {{vpc_name}}"
+  when: (returnedInfo.vpcs is defined) and (returnedInfo.vpcs | length == 0)
+
+- name: Parse returned info into inventory fact
+  set_fact:
+    inventory: "{{inventory | combine({vpc:{'vpc':vpcDetail}}, recursive=True) }}"
+  vars:
+    vpcDetail: 
+      name: "{{returnedInfo.vpcs[0].tags.Name}}"
+      id: "{{returnedInfo.vpcs[0].id}}"
+      cidr: "{{returnedInfo.vpcs[0].cidr_block}}"
+      state: "{{returnedInfo.vpcs[0].state}}"
+  when: (returnedInfo is defined)

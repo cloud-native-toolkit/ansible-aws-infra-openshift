@@ -1,0 +1,34 @@
+---
+
+## Edge VPC
+
+- name: Get edge VPC detail if missing
+  include_tasks:
+    file: get_vpc_info.yaml
+  vars:
+    vpc_name: "{{resourceGroup|lower}}-{{edge|lower}}-vpc"
+    resource: "{{resourceGroup|lower}}"
+    vpc: "edge"
+  when: (inventory.edge.vpc is not defined) or (inventory.edge.vpc | length == 0)
+
+## Management VPC
+
+- name: Get edge VPC detail if missing
+  include_tasks:
+    file: get_vpc_info.yaml
+  vars:
+    vpc_name: "{{resourceGroup|lower}}-{{management|lower}}-vpc"
+    resource: "{{resourceGroup|lower}}"
+    vpc: "mgmt"
+  when: (inventory.mgmt.vpc is not defined) or (inventory.mgmt.vpc | length == 0)
+
+## Workload VPC
+
+- name: Get edge VPC detail if missing
+  include_tasks:
+    file: get_vpc_info.yaml
+  vars:
+    vpc_name: "{{resourceGroup|lower}}-{{workload|lower}}-vpc"
+    resource: "{{resourceGroup|lower}}"
+    vpc: "wkld"
+  when: (inventory.wkld.vpc is not defined) or (inventory.wkld.vpc | length == 0)

@@ -71,8 +71,8 @@
     name: '{{resourceGroup|lower}}-{{edge|lower}}-bastion-nacl'
     subnets: "{{bastionSubnets}}"
     ingress:
-      - [100, 'tcp', 'allow', "{{aclSubnets[0]}}", null, null, 0, 65535]
-      - [200, 'tcp', 'allow', "{{aclSubnets[1]}}", null, null, 0, 65535]
+      - [100, 'tcp', 'allow', "{{inventory.edge.cidrs.ingress.cidr}}", null, null, 0, 65535]
+      - [200, 'tcp', 'allow', "{{inventory.edge.cidrs.bastion.cidr}}", null, null, 0, 65535]
     egress:
       - [100, 'all', 'allow', '0.0.0.0/0', null, null, 0, 65535]
     state: 'present'
