@@ -3,60 +3,20 @@
 ###
 # Create the internet gateway
 
-- set_fact:
-    igw_name: "{{ resourceGroup | lower }}-{{ edge | lower }}-igw"
-    vpc_id: "{{ edgeVpc.id }}"
-
-# Check if Internet Gateway exists
-- name: Check if IGW exists
-  amazon.aws.ec2_vpc_igw_info:
-    region: "{{ awsRegion }}"
-    profile: "{{ awsProfile }}"
-    filters: 
-      "tag:Name": "{{ igw_name }}"
-  register: igwReturnedInfo
-
-- name: Set flag if IGW found
-  set_fact:
-    igwExists: True
-  when: igwReturnedInfo.internet_gateways|length > 0
-
-- name: Set flag to false if IGW not found
-  set_fact:
-    igwExists: False
-  when: igwReturnedInfo.internet_gateways|length == 0
-
-# Create Internet Gateway if it does not already exist
 - name: Create the internet gateway
   import_role:
     name: create_igw
   vars:
-    vpcId: "{{ vpc_id }}"
-    igwName: "{{ igw_name }}"
+    vpcId: "{{ inventory.edge.vpc.id }}"
+    igwName: "{{ resourceGroup | lower }}-{{ edge | lower }}-igw"
     usrProfile: "{{ awsProfile }}"
     reqRegion: "{{ awsRegion }}"
     envName: "{{ resourceGroup|lower }}"
-  when: not igwExists
-
-- name: Append internet gateway id to the vpc dictionary information (already exists)
-  set_fact:
-    edgeVpc: "{{ edgeVpc | combine({'igw_id':igwID}) }}"
-  vars:
-    igwID: "{{igwReturnedInfo.internet_gateways[0].internet_gateway_id}}"
-  when: igwExists
-  
-- name: Append internet gateway id to the vpc dictionary information (just created)
-  set_fact:
-    edgeVpc: "{{ edgeVpc | combine({'igw_id':igwID}) }}"
-  vars:
-    igwID: "{{igwReturnedInfo.gateway_id}}"
-  when: not igwExists
 
 - name: Update inventory data with gateway details
   set_fact:
     inventory: "{{inventory | combine({'edge':{'igw':igwDetails}}, recursive=True)}}"
   vars:
-    igwDetails:
-      name: "{{igw_name}}"
-      vpc_id: "{{vpc_id}}"
-      id: "{{edgeVpc.igw_id}}"
+    igwDetails: 
+      name: "{{ resourceGroup | lower }}-{{ edge | lower }}-igw"
+      id: "{{igwData.internet_gateway_id}}"

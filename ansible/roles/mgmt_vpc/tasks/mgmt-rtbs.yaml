@@ -1,0 +1,157 @@
+---
+
+- name: Clear variables
+  set_fact:
+    privateRTBs: []
+    publicRTBs: []
+    publicSubnets: []
+    rtbList: []
+
+# Public Route tables
+
+- name: Create list of public route tables to create
+  set_fact:
+    publicRTBs: "{{publicRTBs | default([]) + [{'name':name, 'subnet_id':item.id}]}}"
+  loop: "{{inventory.mgmt.subnets}}"
+  loop_control:
+    index_var: idx
+    label: "{{item.name}}"
+  vars:
+    name: "{{resourceGroup|lower}}-{{management|lower}}-public-rtb-{{idx|string}}"
+  when: '"public" in item.name'
+
+- name: Query AWS for existing of public route tables
+  amazon.aws.ec2_vpc_route_table_info:
+    filters:
+      vpc-id: "{{ inventory.mgmt.vpc.id }}"
+      "tag:Name": "{{item.name}}"
+    profile: "{{awsProfile}}"
+    region: "{{awsRegion}}"
+  loop: "{{publicRTBs}}"
+  loop_control:
+    label: "{{item.name}}"
+  register: infoReturned
+
+- set_fact:
+    newList: []
+
+- name: Parse return from query for existence of public subnet route tables
+  set_fact:
+    newList: "{{ newList + [{ 'name':item.name, 'subnet_id':item.subnet_id, 'exists':state }] }}"
+  vars:
+    state: "{{True if(infoReturned.results[idx].route_tables | length > 0) else False}}"
+  loop: "{{publicRTBs}}"
+  loop_control:
+    index_var: idx
+    label: "{{item.name}}"
+
+- set_fact:
+    publicRTBs: "{{newList}}"
+
+- name: Create public route tables if they do not exist
+  amazon.aws.ec2_vpc_route_table:
+    vpc_id: "{{ inventory.mgmt.vpc.id }}"
+    region: "{{ awsRegion }}"
+    profile: "{{ awsProfile }}"
+    tags:
+      Name: "{{item.name}}"
+      Resource: "{{resourceGroup|lower}}"
+    subnets: "{{ item.subnet_id }}"
+    routes:
+      - dest: "{{ inventory.mgmt.cidrs.vpc }}"  
+        gateway_id: 'local'
+      - dest: '0.0.0.0/0'     # return connectivity traffic
+        gateway_id: "{{ inventory.mgmt.igw.id }}"
+  when: not item.exists
+  loop: "{{publicRTBs}}"
+
+# Private route tables
+
+- name: Create list of private route tables to create
+  set_fact:
+    privateRTBs: "{{privateRTBs | default([]) + [{'name':name, 'subnet_id':item.id}]}}"
+  loop: "{{inventory.mgmt.subnets}}"
+  loop_control:
+    index_var: idx
+    label: "{{item.name}}"
+  vars:
+    name: "{{resourceGroup|lower}}-{{management|lower}}-private-rtb-{{idx|string}}"
+  when: '"private" in item.name'
+
+- name: Query AWS for existing of public route tables
+  amazon.aws.ec2_vpc_route_table_info:
+    filters:
+      vpc-id: "{{ inventory.mgmt.vpc.id }}"
+      "tag:Name": "{{item.name}}"
+    profile: "{{awsProfile}}"
+    region: "{{awsRegion}}"
+  loop: "{{privateRTBs}}"
+  loop_control:
+    label: "{{item.name}}"
+  register: infoReturned
+
+- set_fact:
+    newList: []
+
+- name: Parse return from query for existence of public subnet route tables
+  set_fact:
+    newList: "{{ newList + [{ 'name':item.name, 'subnet_id':item.subnet_id, 'exists':state }] }}"
+  vars:
+    state: "{{True if(infoReturned.results[idx].route_tables | length > 0) else False}}"
+  loop: "{{privateRTBs}}"
+  loop_control:
+    index_var: idx
+    label: "{{item.name}}"
+
+- set_fact:
+    privateRTBs: "{{newList}}"
+
+- name: Create private route tables if they do not exist
+  amazon.aws.ec2_vpc_route_table:
+    vpc_id: "{{ inventory.mgmt.vpc.id }}"
+    region: "{{ awsRegion }}"
+    profile: "{{ awsProfile }}"
+    tags:
+      Name: "{{item.name}}"
+      Resource: "{{resourceGroup|lower}}"
+    subnets: "{{ item.subnet_id }}"
+    routes:
+      - dest: "{{ inventory.mgmt.cidrs.vpc }}"  
+        gateway_id: 'local'
+      - dest: '0.0.0.0/0'     # Internet connectivity
+        gateway_id: "{{ inventory.mgmt.ngw[idx].id }}"
+  when: not item.exists
+  loop: "{{privateRTBs}}"
+  loop_control:
+    index_var: idx
+    label: "{{item.name}}"
+
+## Output routes tables to inventory
+
+- name: Query AWS for existence of route tables with resource tag in management VPC
+  amazon.aws.ec2_vpc_route_table_info:
+    filters:
+      vpc-id: "{{ inventory.mgmt.vpc.id }}"
+      "tag:Resource": "{{resourceGroup|lower}}"
+    profile: "{{awsProfile}}"
+    region: "{{awsRegion}}"
+  register: infoReturned
+
+- debug:
+    msg: "{{infoReturned.route_tables}}"
+
+- name: Create list of route tables
+  set_fact:
+    rtbList: "{{rtbList | default([]) + [{'name':name, 'id':id, 'subnet_id':subnet_id}]}}"
+  vars:
+    name: "{{item.tags.Name}}"
+    id: "{{item.id}}"
+    subnet_id: "{{item.associations[0].subnet_id}}"    # Have one RTB per subnet
+  loop: "{{infoReturned.route_tables}}"
+
+- debug:
+    msg: "{{rtbList}}"
+
+- name: Add route table information to inventory
+  set_fact:
+    inventory: "{{inventory | combine({'mgmt':{'rtbs':rtbList}}, recursive=True)}}"

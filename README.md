@@ -5,33 +5,7 @@
 
  ## Instructions
 
- 1. clone this repository
-
-      $ git clone https://github.com/cloud-native-toolkit/ibm-aws-reference-arch-ansible
-
-1. If this is the first time running ansible to automate AWS on your local laptop/system, complete the following.
-
-   1. Install the AWS CLI by following the guide [here](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-welcome.html)
-   1. Install Ansible by following the guide [here](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html)
-   1. Configure AWS CLI to output JSON format (the output field in the file ~/.aws/config on Mac/Linux)
-   1. Install the rosa command line tool
-   1. Create the ROSA account roles per the instructions [here](https://www.rosaworkshop.io/rosa/2-deploy/#create-account-roles)
-
-1. Change to ansible sub-directory under the cloned repository
-
-      $ cd ./ansible/
-
-1. Edit the variables file to customize the installation
-
-      $ vi ./group_vars/all
-
-1. Review the initial inventory file for what is to be created. 
-
-      $ vi ./inventory.yaml
-
-1. Run the ansible playbook
-
-      $ ansible-playbook ./create.yaml
+Refer to the instructions on using ansible to build this reference architecture (here)[./ansible/README.md]
 
 
  ## DRAFT

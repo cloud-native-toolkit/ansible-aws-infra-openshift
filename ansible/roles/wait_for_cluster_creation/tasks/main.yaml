@@ -10,6 +10,6 @@
   args:
     executable: /bin/bash
   register: response
-  until: 'ready_state in response.stdout'
+  until: '"ready" in response.stdout'
   retries: "{{no_retries}}"
   delay: "{{retry_delay}}"

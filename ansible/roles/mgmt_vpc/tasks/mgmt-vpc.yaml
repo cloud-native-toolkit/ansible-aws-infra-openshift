@@ -1,23 +1,20 @@
 ---
 
-- name: Create edge VPC
+- name: Create management VPC
   import_role:
     name: create_vpc
   vars:
     # These variable are defined in the global_vars file
     envName: "{{resourceGroup|lower}}"
-    vpcName: "{{resourceGroup|lower}}-{{edge|lower}}-vpc"
+    vpcName: "{{resourceGroup|lower}}-{{management|lower}}-vpc"
     usrProfile: "{{awsProfile}}"
     reqRegion: "{{awsRegion|default(omit)}}"
     # The cidr_block is obtained from the earlier subnet calcs - only create with egress CIDR
-    cidr_block:
-      - "{{inventory.edge.cidrs.ingress.cidr}}"
-      - "{{inventory.edge.cidrs.bastion.cidr}}"
-      - "{{inventory.edge.cidrs.egress.cidr}}"
+    cidr_block: "{{management_cidr}}"
 
 - name: Add VPC information to inventory
   set_fact:
-    inventory: "{{inventory | combine({'edge':{'vpc':vpcDetails}}, recursive=True)}}"
+    inventory: "{{inventory | combine({'mgmt':{'vpc':vpcDetails}}, recursive=True)}}"
   vars:
     vpcDetails: 
       name: "{{vpcData.tags.Name}}"

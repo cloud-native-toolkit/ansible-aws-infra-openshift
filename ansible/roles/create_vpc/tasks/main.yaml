@@ -1,47 +1,59 @@
 ---
 
+#
+# Creates a VPC or returns info for existing VPC
+# Returns an error if more than one VPC exists in that region with the same tags
+#
+# Input Variables:
+#   envName - the name to use for the resource tag
+#   vpcName - the name of the VPC to be created or searched for
+#   usrProfile - the boto profile to use for the creation (defaults to 'default')
+#   reqRegion - the AWS region into which to create the VPC (defaults to boto default if omitted)
+#
+# Output variables:
+#   vpcData - Dictionary with the returned information from the query
+# 
 
-- name: Determine if using default region
-  set_fact:
-    defaultRegion: True
-  when: (reqRegion is not defined) or (reqRegion|length == 0) 
+# Create the VPC if it does not already exist
+- name: Check if VPC already exists
+  amazon.aws.ec2_vpc_net_info:
+    profile: "{{usrProfile}}"
+    region: "{{reqRegion|default(omit)}}"
+    filters:
+      "tag:Name": "{{ vpcName }}"
+      "tag:Resource": "{{ envName }}"
+  register: query_returnedInfo
 
-- name: Determine if using specified region
+- name: Parse returned data to determine if VPC already exists
   set_fact:
-    defaultRegion: False
-  when: (reqRegion is defined) and (reqRegion|length > 0) 
+    vpcExists: "{{True if(query_returnedInfo.vpcs|length > 0) else False}}"
+
+- name: Fail build if more than one VPC returned
+  fail:
+    msg: [
+      "ERROR: Found more than one existing VPC with name {{vpcName}}",
+      "Please correct and retry"
+    ]
+  when: query_returnedInfo.vpcs|length > 1
 
 - name: Create VPC with specified region
   amazon.aws.ec2_vpc_net:
     name: "{{vpcName}}"
     cidr_block: "{{cidr_block}}"
-    region: "{{reqRegion}}"
+    region: "{{reqRegion|default(omit)}}"
     profile: "{{usrProfile}}"
+    dns_hostnames: "{{enable_dns_hostnames}}"
+    dns_support: "{{enable_dns_support}}"
     tags:
       Resource: "{{envName}}"
     tenancy: default
-  register: returnedInfo_region
+  register: create_returnedInfo
   tags: vpc
-  when: not defaultRegion
+  when: not vpcExists
 
-- name: Create VPC using profile default region
-  amazon.aws.ec2_vpc_net:
-    name: "{{vpcName}}"
-    cidr_block: "{{cidr_block}}"
-    profile: "{{usrProfile}}"
-    tags:
-      Resource: "{{envName}}"
-    tenancy: default
-  register: returnedInfo_default
-  tags: vpc
-  when: defaultRegion
+- debug: 
+    msg: "{{create_returnedInfo}}"
 
-- name: Set vpcData to default set if using default region
+- name: Set vpcData to either the creation or query returned info
   set_fact:
-    vpcData: "{{returnedInfo_default}}"
-  when: defaultRegion
-
-- name: Set vpcData to specified set if using specified region
-  set_fact:
-    vpcData: "{{returnedInfo_region}}"
-  when: not defaultRegion
+    vpcData: "{{query_returnedInfo.vpcs[0] if(vpcExists) else create_returnedInfo.vpc }}"

@@ -21,19 +21,19 @@ workload: wkld
 
 # Network addresses. Note that these must be at least /13 addresses and must not overlap with each other or on site ranges
 edge_cidr: 10.0.0.0/14
-management_cidr: 10.100.0.0/14
-workload_cidr: 10.200.0.0/14
+management_cidr: 10.100.0.0/16
+workload_cidr: 10.200.0.0/16
 
 # The next values are the network prefixes for the tier (ingress, bastion, egress) and individual subnet within those tiers
 edgeTierPrefix: 16
 edgeSubnetPrefix: 24
 
 # The next values are the network prefixes for the tier (public, private) and individual subnet within those tiers
-mgmtTierPrefix: 16
+mgmtTierPrefix: 18
 mgmtSubnetPrefix: 24
 
 # The next values are the network prefixes for the tier (public, private) and individual subnet within those tiers
-wkldTierPrefix: 16
+wkldTierPrefix: 18
 wkldSubnetPrefix: 24
 
 # Path to executables on local host

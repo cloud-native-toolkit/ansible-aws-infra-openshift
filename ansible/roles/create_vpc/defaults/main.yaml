@@ -5,3 +5,5 @@ envName: 'ibm'
 vpcName: 'default'
 cidr_block: '10.0.0.0/16'
 usrProfile: 'default'
+enable_dns_hostnames: True
+enable_dns_support: True

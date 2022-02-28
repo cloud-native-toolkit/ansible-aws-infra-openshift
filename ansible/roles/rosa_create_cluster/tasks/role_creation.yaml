@@ -44,6 +44,8 @@
     executable: /bin/bash
   delegate_to: localhost
   when: create_op_roles
+  register: response
+  failed_when: "'E: Failed' in response"
 
 - name: Create OIDC Provider role
   shell: |

@@ -1,0 +1,130 @@
+---
+
+- name: Clear list variable
+  set_fact:
+    subnetList: []
+
+# Create list of required subnets
+
+- name: Create list of required private subnets
+  set_fact:
+    subnetList: "{{subnetList + [{ 'name':name, 'cidr':cidr, 'availability_zone':az }] }}"
+  vars:
+    name: "{{resourceGroup|lower}}-{{management|lower}}-private-{{idx}}"
+    cidr: "{{item}}"
+    az: "{{availZones[idx]}}"
+  loop: "{{inventory.mgmt.cidrs.private.subnets}}"
+  loop_control:
+    index_var: idx
+    label: "{{item}}"
+
+- name: Create list of required public subnets
+  set_fact:
+    subnetList: "{{subnetList + [{ 'name':name, 'cidr':cidr, 'availability_zone':az }] }}"
+  vars:
+    name: "{{resourceGroup|lower}}-{{management|lower}}-public-{{idx}}"
+    cidr: "{{item}}"
+    az: "{{availZones[idx]}}"
+  loop: "{{inventory.mgmt.cidrs.public.subnets}}"
+  loop_control:
+    index_var: idx
+    label: "{{item}}"
+
+# Check what subnets exist
+- name: Query AWS for list of existing subnets in VPC
+  amazon.aws.ec2_vpc_subnet_info:
+    filters:
+      vpc-id: "{{inventory.mgmt.vpc.id}}"
+      "tag:Resource": "{{resourceGroup|lower}}"
+      "tag:Name": "{{item.name}}"
+  register: subnet_info
+  loop: "{{subnetList}}"
+  loop_control:
+    label: "{{item.name}}"
+
+- set_fact:
+    newList: []
+    createSubnet: False   # Assume not until we find some missing
+
+- name: Parse returned info for existing subnets
+  set_fact:
+    newList: "{{newList + [{ 'name':name, 'cidr':cidr, 'availability_zone':az, 'id':id }] }}"
+  vars:
+    name: "{{subnet_info.results[idx].subnets[0].tags.Name if(subnet_info.results[idx].subnets | length > 0) else item.name}}"
+    cidr: "{{subnet_info.results[idx].subnets[0].cidr_block if(subnet_info.results[idx].subnets | length > 0) else item.cidr}}"
+    az: "{{subnet_info.results[idx].subnets[0].availability_zone if(subnet_info.results[idx].subnets | length > 0) else item.availability_zone}}"
+    id: "{{subnet_info.results[idx].subnets[0].id if(subnet_info.results[idx].subnets | length > 0) else 'tbd'}}"
+  loop: "{{subnetList}}"
+  loop_control:
+    label: "{{item.name}}"
+    index_var: idx
+  failed_when: (subnet_info.results[idx].subnets | length > 1)
+
+- set_fact:
+    subnetList: "{{newList}}"
+
+- name: Anything to create?
+  set_fact:
+    createSubnet: True
+  when: item.id == 'tbd'
+  loop: "{{subnetList}}"
+  loop_control:
+    label: "{{item.name}}"
+
+- name: Create missing subnets
+  include_role:
+    name: create_subnet
+  vars:
+    vpcId: "{{ inventory.mgmt.vpc.id }}"
+    cidr: "{{ item.cidr }}"
+    reqAZ: "{{ item.availability_zone }}"
+    subnetName: "{{item.name}}"
+    usrProfile: "{{awsProfile}}"
+    reqRegion: "{{awsRegion}}"
+    envName: "{{resourceGroup|lower}}"
+  loop: "{{subnetList}}"
+  loop_control:
+    label: "{{item.name}}"
+  when: (item.id == 'tbd') and (createSubnet)
+
+# Get subnet id for newly created subnets
+- name: Query AWS for list of existing subnets in VPC
+  amazon.aws.ec2_vpc_subnet_info:
+    filters:
+      vpc-id: "{{inventory.mgmt.vpc.id}}"
+      "tag:Resource": "{{resourceGroup|lower}}"
+      "tag:Name": "{{item.name}}"
+  register: subnet_info
+  loop: "{{subnetList}}"
+  loop_control:
+    label: "{{item.name}}"
+  when: createSubnet
+
+- set_fact:
+    newList: []
+  when: createSubnet
+
+- name: Parse returned info for existing subnets
+  set_fact:
+    newList: "{{newList + [{ 'name':name, 'cidr':cidr, 'availability_zone':az, 'id':id }] }}"
+  vars:
+    name: "{{subnet_info.results[idx].subnets[0].tags.Name }}"
+    cidr: "{{subnet_info.results[idx].subnets[0].cidr_block }}"
+    az: "{{subnet_info.results[idx].subnets[0].availability_zone }}"
+    id: "{{subnet_info.results[idx].subnets[0].id }}"
+  loop: "{{subnetList}}"
+  loop_control:
+    label: "{{item.name}}"
+    index_var: idx
+  failed_when: (subnet_info.results[idx].subnets | length != 1)
+  when: createSubnet
+
+- set_fact:
+    subnetList: "{{newList}}"
+  when: createSubnet
+
+# Populate inventory
+
+- name: Write subnet details to inventory
+  set_fact:
+    inventory: "{{inventory | combine({'mgmt':{'subnets':subnetList}}, recursive=True) }}"

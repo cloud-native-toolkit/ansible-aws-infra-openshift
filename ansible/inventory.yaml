@@ -10,10 +10,20 @@ inventory:
     nacl: []
     rtbs: []
   mgmt:
+    vpc: []
+    subnets: []
+    igw: []
+    ngw: []
+    rtbs: []
     rosa: []
   wkld:
+    vpc: []
+    subnets: []
+    igw: []
+    ngw: []
+    rtbs: []
     rosa: []
   pcxs:
-    edgeMgmt: []
-    edgeWkld: []
-    mgmtWkld: []
+    edge_mgmt: []
+    edge_wkld: []
+    mgmt_wkld: []

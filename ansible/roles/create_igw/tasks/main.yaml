@@ -1,44 +1,51 @@
 ---
 
-- name: Determine if using default region
-  set_fact:
-    defaultRegion: True
-  when: (reqRegion is not defined) or (reqRegion|length == 0)
+#
+# Check if an IGW already exists for a specified VPC and create it if not
+#
+# Input variables:
+#   vpcID - The id (vpc-xxx) of the VPC to attach the IGW
+#   reqRegion (optional) - The region where the VPC is located (and where to look for VPC)
+#   usrProfile (optional) - The boto user profile to use (default is default)
+#   igwName - The name of the IGW to check/create
+#   envName - Value for the "Resource" tag
+# Output variables:
+#   igwData - Returned information on the IGW found or created
 
-- name: Determine if using specified region
+
+- name: Check if IGW exists
+  amazon.aws.ec2_vpc_igw_info:
+    region: "{{ reqRegion }}"
+    profile: "{{ usrProfile }}"
+    filters: 
+      "tag:Name": "{{ igwName }}"
+      "tag:Resource": "{{ envName }}"
+  register: igwReturnedInfo
+
+- name: Set flag if IGW found
   set_fact:
-    defaultRegion: False
-  when: (reqRegion is defined) and (reqRegion|length > 0)
+    igwExists: "{{ True if(igwReturnedInfo.internet_gateways|length > 0) else False }}"
+
+- name: Fail build if more than one IGW returned
+  fail:
+    msg: [
+      "ERROR: Found more than one existing IGW with name {{igwName}}",
+      "Please correct and retry"
+    ]
+  when: igwReturnedInfo.internet_gateways|length > 1
 
 - name: Create AWS Internet Gateway with specified region
   amazon.aws.ec2_vpc_igw:
     vpc_id: "{{vpcId}}"
-    region: "{{reqRegion}}"
+    region: "{{reqRegion | default(omit)}}"
     profile: "{{usrProfile}}"
     state: present
     tags:
       Name: "{{igwName}}"
       Resource: "{{envName}}"
-  register: returnedInfo_region
-  when: not defaultRegion
-
-- name: Create AWS Internet Gateway with default region
-  amazon.aws.ec2_vpc_igw:
-    vpc_id: "{{vpcId}}"
-    profile: "{{usrProfile}}"
-    state: present
-    tags:
-      Name: "{{igwName}}"
-      Resource: "{{envName}}"
-  register: returnedInfo_default
-  when: defaultRegion
-
-- name: Set igwReturnedInfo to default if using default region
-  set_fact:
-    igwReturnedInfo: "{{returnedInfo_default}}"
-  when: defaultRegion
+  register: returnedInfo
+  when: not igwExists
 
 - name: Set igwReturnedInfo to specified if using specified region
   set_fact:
-    igwReturnedInfo: "{{returnedInfo_region}}"
-  when: not defaultRegion
+    igwData: "{{igwReturnedInfo.internet_gateways[0] if(igwExists) else returnedInfo}}"
