@@ -1,6 +1,7 @@
 # Default (empty) cloud inventory
 # Empty items in this list will be created
 
+type: 'Production'
 inventory:
   edge:
     vpc: []

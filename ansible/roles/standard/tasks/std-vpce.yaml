@@ -1,0 +1,45 @@
+---
+
+- name: Query AWS for existing VPC Endpoints
+  amazon.aws.ec2_vpc_endpoint_info:
+    region: "{{awsRegion}}"
+    filters:
+      vpc-id: "{{inventory.vpc.id}}" 
+      vpc-endpoint-state: available
+      "tag:Resource": "{{resourceGroup|lower}}"
+  register: infoReturned
+
+- name: Fail if more than one VPC Endpoint found
+  fail:
+    msg: "ERROR: Found multiple VPC Endpoints for VPC {{inventory.vpc.name}}"
+  when: infoReturned.vpc_endpoints | length > 1
+
+- name: Parse for existing VPC Endpoints
+  set_fact:
+    vpceExists: "{{True if(infoReturned.vpc_endpoints | length > 0) else False}}"
+
+- name: Create list of 
+  set_fact:
+    rtbList: "{{rtbList | default([]) + [item.id] }}"
+  loop: "{{inventory.rtbs}}"
+
+- name: Create VPC Endpoint if not present
+  amazon.aws.ec2_vpc_endpoint:
+    state: present
+    region: "{{awsRegion}}"
+    vpc_id: "{{inventory.vpc.id}}"
+    service: "com.amazonaws.{{awsRegion}}.s3"
+    tags:
+      Resource: "{{resourceGroup|lower}}"
+    route_table_ids: "{{rtbList}}"
+  when: not vpceExists
+  register: createDetails
+
+- name: Update inventory with VPC Endpoint Details
+  set_fact:
+    inventory: "{{inventory | combine({'vpce':vpceDetails}, recursive=True) }}"
+  vars:
+    vpceDetails:
+      id: "{{createDetails.result.vpc_endpoint_id if(not vpceExists) else infoReturned.vpc_endpoints[0].vpc_endpoint_id}}"
+      service: "{{createDetails.result.service_name if(not vpceExists) else infoReturned.vpc_endpoints[0].service_name}}"
+

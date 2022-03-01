@@ -1,0 +1,84 @@
+---
+
+- name: Create a quick start VPC and OpenShift cluster on AWS with Ansible
+  hosts: localhost
+
+  vars:
+    awsProfile: default
+    awsRegion: ap-southeast-2
+    availZones:    # Add availability zones as required (must all be part of the above region)
+    - 'ap-southeast-2a'
+    resourceGroup: 'recloud'
+    vpcCIDR: 10.0.0.0/16
+    subnetPrefix: 24
+    openshift_version: 4.9.21
+
+  tasks:
+
+    - name: Get the current time
+      command: date
+      register: dateResponse
+
+    - name: Record current date
+      set_fact:
+        start_time: '{{dateResponse.stdout_lines[0]}}'
+
+    - name: Get variables
+      include_vars:
+        file: ./group_vars/all
+
+    - name: Check if inventory file exists
+      stat:
+        path: ./inventory.yaml
+      register: inv_file
+
+    - name: Read inventory template
+      include_vars:
+        file: '{{"./inventory.yaml" if(inv_file.stat.exists) else "./templates/std-inventory.yaml"}}'
+
+    - name: Fail if existing inventory is not for quickstart
+      fail: 
+        msg: "ERROR: Existing inventory is not for quick start architecture"
+      when: (arch_type != 'Standard')
+
+    - name: Create the VPC and associated services
+      include_role:
+        name: standard
+
+    - name: Get list of subnet ids
+      set_fact:
+        subnet_ids: "{{inventory | json_query('subnets[*].id')}}"
+
+    - name: Create the ROSA cluster
+      include_role:
+        name: rosa_create_cluster
+      vars:
+        cluster_name: "{{resourceGroup|lower}}-rosa"
+        machine_cidr: "{{inventory.vpc.cidr}}"
+        subnets: "{{subnet_ids}}"
+        region: "{{awsRegion}}"
+        profile: "{{awsProfile}}"
+        version: "{{openshift_version}}"
+        wait_for_completion: true
+        new_vpc: False
+
+    - name: Record current date
+      set_fact:
+        end_time: '{{dateResponse.stdout_lines[0]}}'
+
+    - name: Update last update time to inventory
+      set_fact:
+        inventory: "{{inventory | combine({'Last_Update':end_time}, recursive=True)}}"
+
+    - name: Write updated inventory file
+      template:
+        src: ./templates/inventory.j2
+        dest: ./inventory.yaml
+
+    - debug:
+        msg: [
+            "Start time was {{start_time}}",
+            "End time was {{end_time}}",
+            "Inventory => ",
+            "{{inventory}}"    
+        ]

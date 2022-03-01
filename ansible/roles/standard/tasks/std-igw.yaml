@@ -1,0 +1,19 @@
+---
+
+- name: Create IGW
+  include_role:
+    name: create_igw
+  vars:
+    igwName: "{{ resourceGroup | lower }}-igw"
+    envName: "{{ resourceGroup | lower }}"
+    vpcId: "{{ inventory.vpc.id }}"
+    reqRegion: "{{ awsRegion }}"
+    usrProfile: "{{ awsProfile }}"
+
+- name: Update inventory with IGW details
+  set_fact:
+    inventory: "{{inventory | combine({'igw':igwDetails}, recursive=True)}}"
+  vars:
+    igwDetails: 
+      name: "{{ resourceGroup | lower }}-igw"
+      id: "{{igwData.gateway_id if(igwData.gateway_id is defined) else igwData.internet_gateway_id}}"

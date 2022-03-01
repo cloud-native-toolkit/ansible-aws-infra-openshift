@@ -51,9 +51,6 @@
   tags: vpc
   when: not vpcExists
 
-- debug: 
-    msg: "{{create_returnedInfo}}"
-
 - name: Set vpcData to either the creation or query returned info
   set_fact:
     vpcData: "{{query_returnedInfo.vpcs[0] if(vpcExists) else create_returnedInfo.vpc }}"

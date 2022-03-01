@@ -1,0 +1,90 @@
+---
+
+- name: Clear variables
+  set_fact:
+    ngwList: []
+    newList: []
+    subnetList: []
+
+- name: Get list of public subnets
+  set_fact:
+    subnetList: "{{subnetList + [{'subnet_id':item.id}]}}"
+  loop: "{{inventory.subnets}}"
+  loop_control:
+    label: "{{item.name}}"
+  when: '"public" is in item.name'
+
+- name: Create list of NAT Gateways required
+  set_fact:
+    ngwList: "{{ngwList + [{'name':name, 'subnet_id':item.subnet_id}]}}"
+  vars:
+    name: "{{resourceGroup|lower}}-ngw-{{idx}}"
+  loop: "{{subnetList}}"
+  loop_control:
+    index_var: idx
+    label: "{{item.subnet_id}}"
+
+- name: Query AWS for existance of NAT gateways
+  amazon.aws.ec2_vpc_nat_gateway_info:
+    region: "{{awsRegion}}"
+    profile: "{{awsProfile}}"
+    filters:
+      subnet-id: "{{item.subnet_id}}"
+  loop: "{{ngwList}}"
+  register: returnedInfo
+
+- name: Parse returned information for list of existing gateways
+  set_fact:
+    newList: "{{newList + [{'name':item.name, 'subnet_id':item.subnet_id,'exists':status}]}}"
+  vars:
+    status: "{{True if(returnedInfo.results[idx].result | length > 0) else False}}"
+  loop: "{{ngwList}}"
+  loop_control:
+    label: "{{item.name}}"
+    index_var: idx
+
+- set_fact:
+    ngwList: "{{newList}}"
+
+- name: Create NAT gateways on each public subnet
+  amazon.aws.ec2_vpc_nat_gateway:
+    subnet_id: "{{item.subnet_id}}"
+    profile: "{{awsProfile}}"
+    region: "{{awsRegion|default(omit)}}"
+    state: present
+    wait: true
+    tags:
+      Name: "{{item.name}}"
+      Resource: "{{resourceGroup|lower}}"
+  loop: "{{ngwList}}"
+  loop_control:
+    label: "{{item.name}}"
+  when: not item.exists
+
+- name: Query for list of NAT Gateways
+  amazon.aws.ec2_vpc_nat_gateway_info:
+    region: "{{awsRegion|default(omit)}}"
+    filters:
+      "tag:Resource": "{{resourceGroup|lower}}"
+      state: ['available']
+  register: infoReturned
+
+- set_fact:
+    ngwDetails: []
+
+- name: Parse query for NAT details
+  set_fact:
+    ngwDetails: "{{ngwDetails +[{'name':name, 'subnet_id':subnet_id, 'id':id, 'addresses':addresses, 'state':state}]}}"
+  vars:
+    name: "{{item.tags.Name}}"
+    subnet_id: "{{item.subnet_id}}"
+    id: "{{item.nat_gateway_id}}"
+    addresses: "{{item.nat_gateway_addresses}}"
+    state: "{{item.state}}"
+  loop: "{{infoReturned.result}}"
+
+- name: Add NAT Gateway information to inventory
+  set_fact:
+    inventory: "{{inventory | combine({'ngw':ngwDetails}, recursive=True) }}"
+
+

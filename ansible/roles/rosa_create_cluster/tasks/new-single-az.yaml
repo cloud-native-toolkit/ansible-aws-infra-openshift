@@ -1,0 +1,25 @@
+---
+
+# Create a new VPC and ROSA cluster in a single availabiltiy zone
+
+- name: Kick off single availability zone cluster creation
+  shell: |
+    set timeout 300
+
+    {{rosa_path}}rosa create cluster \
+    --cluster-name {{cluster_name}} \
+    --machine-cidr {{machine_cidr}} \
+    --compute-nodes {{compute_nodes}} \
+    --region {{region}} \
+    --profile {{profile}} \
+    --version {{version}} \
+    --role-arn arn:aws:iam::{{accountid}}:role/ManagedOpenShift-Installer-Role \
+    --support-role-arn arn:aws:iam::{{accountid}}:role/ManagedOpenShift-Installer-Role \
+    --controlplane-iam-role arn:aws:iam::{{accountid}}:role/ManagedOpenShift-ControlPlane-Role \
+    --worker-iam-role arn:aws:iam::{{accountid}}:role/ManagedOpenShift-Worker-Role
+
+    exit 0
+  args:
+    executable: /bin/bash
+  delegate_to: localhost
+  register: response

@@ -5,31 +5,15 @@
 # Region
 # Compute nodes
 # Multi-AZ - boolean. True to create a multi-AZ cluster. Defaults to false.
+# Subnets - list of existing subnet id's if deploying to an existing cluster
 
 
 # Kick off cluster creation
 
 - name: Clear variables
   set_fact:
-    response_multi_az: []
-    response_single_az: []
     response: []
     cluster_exists: "{{False if (not check_for_existence) else None}}"   # Assume cluster does not exist if told not to check
-
-- name: Get AWS Account Details
-  amazon.aws.aws_caller_info:
-  register: accountResponse
-  when: accountid is not defined
-
-- name: Set account id
-  set_fact:
-    accountid: "{{accountResponse.account}}"
-  when: accountid is not defined
-
-- name: Set region to default if not specified
-  set_fact:
-    region: "{{ lookup('file', aws_config_path+'config') | regex_search('region = (.+)', '\\1') | first }}"
-  when: region is not defined
 
 - name: Query list of ROSA Clusters
   shell: |
@@ -49,73 +33,82 @@
     cluster_exists: "{{True if (cluster_name in response.stdout) else False}}"
   when: check_for_existence
 
+- name: Get AWS Account Details
+  amazon.aws.aws_caller_info:
+  register: accountResponse
+  when: (accountid is not defined) and (not cluster_exists)
+
+- name: Set account id
+  set_fact:
+    accountid: "{{accountResponse.account}}"
+  when: (accountid is not defined) and (not cluster_exists)
+
+- name: Set region to default if not specified
+  set_fact:
+    region: "{{ lookup('file', aws_config_path+'config') | regex_search('region = (.+)', '\\1') | first }}"
+  when: (region is not defined) and (not cluster_exists)
+
+- name: Determine if multi-az for existing VPC deployment
+  set_fact:
+    multi_az: "{{True if(subnets|length>2) else False}}"
+  when: not new_vpc
+
 - name: Set default compute nodes if not provided
   set_fact:
     compute_nodes: "{{3 if(multi_az) else 2}}"
   when: compute_nodes is not defined
 
-- name: Kick off multi-availability zone cluster creation
-  shell: |
-    set timeout 300
+- name: Kick off multi-availability zone cluster creation in new VPC
+  include_tasks:
+    file: new-multi-az.yaml
+  when: (new_vpc) and (multi_az) and (not cluster_exists)
 
-    {{rosa_path}}rosa create cluster \
-    --cluster-name {{cluster_name}} \
-    --machine-cidr {{machine_cidr}} \
-    --multi-az \
-    --compute-nodes {{compute_nodes}} \
-    --region {{region}} \
-    --profile {{profile}} \
-    --role-arn arn:aws:iam::{{accountid}}:role/ManagedOpenShift-Installer-Role \
-    --support-role-arn arn:aws:iam::{{accountid}}:role/ManagedOpenShift-Installer-Role \
-    --controlplane-iam-role arn:aws:iam::{{accountid}}:role/ManagedOpenShift-ControlPlane-Role \
-    --worker-iam-role arn:aws:iam::{{accountid}}:role/ManagedOpenShift-Worker-Role
+- name: Kick off single availability zone cluster creation in new VPC
+  include_tasks:
+    file: new-single-az.yaml
+  when: (new_vpc) and (not multi_az) and (not cluster_exists)
 
-    exit 0
-  args:
-    executable: /bin/bash
-  delegate_to: localhost
-  register: response_multi_az
-  when: multi_az and not cluster_exists
+- name: Kick off multi-availability zone cluster creation in existing VPC
+  include_tasks:
+    file: multi-az.yaml
+  when: (not new_vpc) and (multi_az) and (not cluster_exists)
 
-
-- name: Kick off single availability zone cluster creation
-  shell: |
-    set timeout 300
-
-    {{rosa_path}}rosa create cluster \
-    --cluster-name {{cluster_name}} \
-    --machine-cidr {{machine_cidr}} \
-    --compute-nodes {{compute_nodes}} \
-    --region {{region}} \
-    --profile {{profile}} \
-    --role-arn arn:aws:iam::{{accountid}}:role/ManagedOpenShift-Installer-Role \
-    --support-role-arn arn:aws:iam::{{accountid}}:role/ManagedOpenShift-Installer-Role \
-    --controlplane-iam-role arn:aws:iam::{{accountid}}:role/ManagedOpenShift-ControlPlane-Role \
-    --worker-iam-role arn:aws:iam::{{accountid}}:role/ManagedOpenShift-Worker-Role
-
-    exit 0
-  args:
-    executable: /bin/bash
-  delegate_to: localhost
-  register: response_single_az
-  when: not multi_az and not cluster_exists
-
-- name: Set response to multi-az if creating multi-az cluster
-  set_fact:
-    response: "{{response_multi_az}}"
-  when: multi_az
-
-- name: Set response to single-az if creating single-az cluster
-  set_fact:
-    response: "{{response_single_az}}"
-  when: not multi_az
+- name: Kick off single availability zone cluster creation in existing VPC
+  include_tasks:
+    file: single-az.yaml
+  when: (not new_vpc) and (not multi_az) and (not cluster_exists)
 
 - name: Create management roles
   include_tasks:
     file: role_creation.yaml
+  when: not cluster_exists
 
 - name: Wait for cluster completion
   include_tasks:
     file: wait.yaml
-  when: wait_for_completion
+  when: wait_for_completion and not cluster_exists
+
+- name: Get ROSA Cluster status
+  shell: |
+    {{rosa_path}}rosa describe cluster --cluster {{cluster_name}} | tr -s " " | grep ": " | sed 's/\"//g' | sed 's/ /_/g'
+  args:
+    executable: /bin/bash
+  register: clusterResponse
+
+- name: Convert cluster details to facts
+  set_fact:
+    rosaDict: "{{ rosaDict | default({}) | combine( { item.split(':_')[0] | trim : item.split(':_')[1] | trim } )}}"
+  loop: "{{clusterResponse.stdout_lines}}"
+
+- name: Update inventory with ROSA Cluster details
+  set_fact:
+    inventory: "{{inventory | combine({'rosa':rosaDetails}, recursive=True)}}"
+  vars:
+    rosaDetails:
+      name: "{{rosaDict.Name}}"
+      id: "{{rosaDict.ID}}"
+      console: "{{rosaDict.Console_URL}}"
+      dns: "{{rosaDict.DNS}}"
+      state: "{{rosaDict.State}}"
+  
 

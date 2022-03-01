@@ -1,0 +1,37 @@
+---
+
+# Create CIDR info if required
+- name: Determine management CIDR requirements
+  include_tasks: std-cidr.yaml
+  when: (inventory.cidrs | length == 0)
+
+# Create VPC if required
+- name: Build VPC if not already present
+  include_tasks: std-vpc.yaml
+  when: (inventory.vpc is defined) and (inventory.vpc | length == 0)
+
+# Create subnets if required
+- name: Create public and private subnets
+  include_tasks: std-subnets.yaml
+  when: (inventory.subnets is defined) and (inventory.subnets | length == 0)
+
+# Create internet gateway if required
+- name: Create Internet Gateway
+  include_tasks: std-igw.yaml
+  when: >
+    (inventory.igw is defined) and (inventory.igw | length == 0)
+
+# Create NAT Gateway if required
+- name: Create NAT Gateways for public subnets
+  include_tasks: std-ngw.yaml
+  when: (inventory.ngw is defined) and (inventory.ngw | length == 0)
+
+# Create Route tables if required
+- name: Create Route Tables
+  include_tasks: std-rtbs.yaml
+  when: (inventory.rtbs is defined) and (inventory.rtbs | length == 0)
+
+# Create VPC Endpoint for S3 service
+- name: Create VPC Endpoint for S3 service
+  include_tasks: std-vpce.yaml
+  when: (inventory.vpce is defined) and (inventory.vpce | length == 0)
