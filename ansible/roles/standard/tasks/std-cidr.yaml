@@ -39,4 +39,3 @@
 - name: Add private subnet CIDRs to inventory
   set_fact:
     inventory: "{{inventory | combine({'cidrs':{'private':{'subnets':cidrReturn.stdout_lines}}}, recursive=True)}}"
-

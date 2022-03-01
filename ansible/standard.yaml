@@ -1,6 +1,6 @@
 ---
 
-- name: Create a quick start VPC and OpenShift cluster on AWS with Ansible
+- name: Create a VPC and OpenShift cluster on AWS with Ansible per the standard reference architecture
   hosts: localhost
 
   vars:
@@ -8,6 +8,8 @@
     awsRegion: ap-southeast-2
     availZones:    # Add availability zones as required (must all be part of the above region)
     - 'ap-southeast-2a'
+    - 'ap-southeast-2b'
+    - 'ap-southeast-2c'
     resourceGroup: 'recloud'
     vpcCIDR: 10.0.0.0/16
     subnetPrefix: 24
@@ -22,10 +24,6 @@
     - name: Record current date
       set_fact:
         start_time: '{{dateResponse.stdout_lines[0]}}'
-
-    - name: Get variables
-      include_vars:
-        file: ./group_vars/all
 
     - name: Check if inventory file exists
       stat:
