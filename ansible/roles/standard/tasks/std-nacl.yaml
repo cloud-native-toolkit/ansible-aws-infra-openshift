@@ -1,0 +1,93 @@
+---
+
+# Private Network ACL
+- name: Query AWS for existing private subnet Network ACL
+  community.aws.ec2_vpc_nacl_info:
+    profile: "{{awsProfile}}"
+    region: "{{awsRegion}}"
+    filters:
+      'tag:Name': '{{resourceGroup|lower}}-private-nacl'
+      'tag:Resource': '{{resourceGroup|lower}}'
+  register: infoReturned
+
+- name: Set fact on Network ACL existence
+  set_fact:
+    naclExists: "{{False if(infoReturned.nacls|length == 0) else True}}"
+
+- name: Create private Network ACL if it does not exist
+  community.aws.ec2_vpc_nacl:
+    vpc_id: "{{inventory.vpc.id}}"
+    name: "{{resourceGroup|lower}}-private-nacl"
+    subnets: "{{inventory.subnets | json_query(query)}}"
+    tags:
+      Resource: "{{resourceGroup|lower}}"
+    ingress:
+      - [100, 'tcp', 'allow', '{{inventory.cidrs.vpc}}', null, null, 80, 80]
+      - [200, 'tcp', 'allow', '{{inventory.cidrs.vpc}}', null, null, 443, 443]
+      - [300, 'tcp', 'allow', '{{inventory.cidrs.vpc}}', null, null, 22, 22]
+      - [400, 'tcp', 'allow', '0.0.0.0/0', null, null, 0, 65535]
+      - [401, 'udp', 'allow', '0.0.0.0/0', null, null, 0, 65535]
+    egress:
+      - [100, 'all', 'allow', '0.0.0.0/0', null, null, 0, 65535]
+    state: 'present'
+  vars:
+    query: "[? contains(name,'private')].id"
+  register: createInfo
+  when: not naclExists
+
+# EC2 Network ACL
+- name: Query AWS for existing ec2 subnet Network ACL
+  community.aws.ec2_vpc_nacl_info:
+    profile: "{{awsProfile}}"
+    region: "{{awsRegion}}"
+    filters:
+      'tag:Name': '{{resourceGroup|lower}}-ec2-nacl'
+      'tag:Resource': '{{resourceGroup|lower}}'
+  register: infoReturned
+
+- name: Set fact on Network ACL existence
+  set_fact:
+    naclExists: "{{False if(infoReturned.nacls|length == 0) else True}}"
+
+- name: Create ec2 Network ACL if it does not exist
+  community.aws.ec2_vpc_nacl:
+    vpc_id: "{{inventory.vpc.id}}"
+    name: "{{resourceGroup|lower}}-ec2-nacl"
+    subnets: "{{inventory.subnets | json_query(query)}}"
+    tags:
+      Resource: "{{resourceGroup|lower}}"
+    ingress:
+      - [100, 'tcp', 'allow', '{{inventory.cidrs.vpc}}', null, null, 0, 65535]
+      - [200, 'udp', 'allow', '{{inventory.cidrs.vpc}}', null, null, 0, 65535]
+    egress:
+      - [100, 'all', 'allow', '0.0.0.0/0', null, null, 0, 65535]
+    state: 'present'
+  vars:
+    query: "[? contains(name,'ec2')].id"
+  register: createInfo
+  when: not naclExists
+
+# Inventory update
+- name: Query AWS for all Network ACLs in region
+  community.aws.ec2_vpc_nacl_info:
+    profile: "{{awsProfile}}"
+    region: "{{awsRegion}}"
+    filters:
+      'tag:Resource': '{{resourceGroup|lower}}'
+  register: infoReturned
+
+- name: Filter list to the ones associated with this environment
+  set_fact:
+    naclList: "{{naclList | default([]) + [{'name':name,'subnets':subnets,'id':nacl_id}]}}"
+  vars:
+    name: "{{item.tags.Name}}"
+    subnets: "{{item.subnets}}"
+    nacl_id: "{{item.nacl_id}}"
+  loop: "{{infoReturned.nacls}}"
+  loop_control:
+    label: "{{item.nacl_id}}"
+  failed_when: infoReturned.nacls | length == 0
+
+- name: Add NACL information to inventory
+  set_fact:
+    inventory: "{{inventory | combine({'nacl':naclList}, recursive=True)}}"

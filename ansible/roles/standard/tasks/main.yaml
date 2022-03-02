@@ -35,3 +35,23 @@
 - name: Create VPC Endpoint for S3 service
   include_tasks: std-vpce.yaml
   when: (inventory.vpce is defined) and (inventory.vpce | length == 0)
+
+# Create the ROSA Cluster if required
+- name: Create the ROSA cluster
+  include_tasks: std-rosa.yaml
+  when: (inventory.rosa is defined) and (inventory.rosa | length == 0)
+
+# Create private subnets for EC2 instances
+- name: Create ec2 private subnets
+  include_tasks: std-ec2-subnets.yaml
+  when: (inventory.ec2_subnets is defined) and (inventory.ec2_subnets | length == 0)
+
+# Create route tables for EC2 private subnets
+- name: Create ec2 private subnet route tables
+  include_tasks: std-ec2-rtbs.yaml
+  when: (inventory.ec2_rtbs is defined) and (inventory.ec2_rtbs | length == 0)
+
+# Lock down environment with Network ACL
+- name: Create the Network ACL for the private and ec2 subnets
+  include_tasks: std-nacl.yaml
+  when: (inventory.nacl is defined) and (inventory.nacl | length == 0)

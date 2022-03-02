@@ -34,31 +34,22 @@
       include_vars:
         file: '{{"./inventory.yaml" if(inv_file.stat.exists) else "./templates/std-inventory.yaml"}}'
 
-    - name: Fail if existing inventory is not for quickstart
+    - name: Fail if existing inventory is not for standard architecture
       fail: 
         msg: "ERROR: Existing inventory is not for quick start architecture"
       when: (arch_type != 'Standard')
 
-    - name: Create the VPC and associated services
+    - name: Add profile to inventory
+      set_fact:
+        inventory: "{{inventory | combine({'profile':awsProfile}, recursive=True)}}"
+
+    - name: Add region to inventory
+      set_fact:
+        inventory: "{{inventory | combine({'region':awsRegion}, recursive=True)}}"
+
+    - name: Create the VPC, ROSA cluster and associated services
       include_role:
         name: standard
-
-    - name: Get list of subnet ids
-      set_fact:
-        subnet_ids: "{{inventory | json_query('subnets[*].id')}}"
-
-    - name: Create the ROSA cluster
-      include_role:
-        name: rosa_create_cluster
-      vars:
-        cluster_name: "{{resourceGroup|lower}}-rosa"
-        machine_cidr: "{{inventory.vpc.cidr}}"
-        subnets: "{{subnet_ids}}"
-        region: "{{awsRegion}}"
-        profile: "{{awsProfile}}"
-        version: "{{openshift_version}}"
-        wait_for_completion: true
-        new_vpc: False
 
     - name: Record current date
       set_fact:

@@ -10,3 +10,6 @@ inventory:
   ngw: []
   rtbs: []
   rosa: []
+  nacl: []
+  ec2_subnets: []
+  ec2_rtbs: []

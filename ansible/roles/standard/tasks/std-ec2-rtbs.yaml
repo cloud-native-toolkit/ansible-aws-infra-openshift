@@ -1,0 +1,95 @@
+---
+
+- name: Clear variables
+  set_fact:
+    ec2RTBs: []
+    rtbList: []
+    idx: 0
+
+# Public Route tables
+
+- name: Create list of ec2 route tables to create
+  set_fact:
+    ec2RTBs: "{{ec2RTBs | default([]) + [{'name':name, 'subnet_id':item.id}]}}"
+  loop: "{{inventory.ec2_subnets}}"
+  loop_control:
+    index_var: idx
+    label: "{{item.name}}"
+  vars:
+    name: "{{resourceGroup|lower}}-ec2-rtb-{{idx|string}}"
+  when: '"ec2" in item.name'
+
+- name: Query AWS for existing of ec2 route tables
+  amazon.aws.ec2_vpc_route_table_info:
+    filters:
+      vpc-id: "{{ inventory.vpc.id }}"
+      "tag:Name": "{{item.name}}"
+    profile: "{{awsProfile}}"
+    region: "{{awsRegion}}"
+  loop: "{{ec2RTBs}}"
+  loop_control:
+    label: "{{item.name}}"
+  register: infoReturned
+
+- set_fact:
+    newList: []
+
+- name: Parse return from query for existence of public subnet route tables
+  set_fact:
+    newList: "{{ newList + [{ 'name':item.name, 'subnet_id':item.subnet_id, 'exists':state }] }}"
+  vars:
+    state: "{{True if(infoReturned.results[idx].route_tables | length > 0) else False}}"
+  loop: "{{ec2RTBs}}"
+  loop_control:
+    index_var: idx
+    label: "{{item.name}}"
+
+- set_fact:
+    ec2RTBs: "{{newList}}"
+
+- name: Create ec2 route tables if they do not exist
+  amazon.aws.ec2_vpc_route_table:
+    vpc_id: "{{ inventory.vpc.id }}"
+    region: "{{ awsRegion }}"
+    profile: "{{ awsProfile }}"
+    tags:
+      Name: "{{item.name}}"
+      Resource: "{{resourceGroup|lower}}"
+    subnets: "{{ item.subnet_id }}"
+    routes:
+      - dest: "{{ inventory.cidrs.vpc }}"  
+        gateway_id: 'local'
+      - dest: '0.0.0.0/0'     # Internet connectivity
+        gateway_id: "{{ inventory.ngw[idx].id }}"
+  when: not item.exists
+  loop: "{{ec2RTBs}}"
+  loop_control:
+    index_var: idx
+    label: "{{item.name}}"
+
+## Output routes tables to inventory
+
+- name: Query AWS for existence of route tables with resource tag in management VPC
+  amazon.aws.ec2_vpc_route_table_info:
+    filters:
+      vpc-id: "{{ inventory.vpc.id }}"
+      "tag:Resource": "{{resourceGroup|lower}}"
+    profile: "{{awsProfile}}"
+    region: "{{awsRegion}}"
+  register: infoReturned
+
+- name: Create list of route tables
+  set_fact:
+    rtbList: "{{rtbList | default([]) + [{'name':name, 'id':id, 'subnet_id':subnet_id}]}}"
+  vars:
+    name: "{{item.tags.Name}}"
+    id: "{{item.id}}"
+    subnet_id: "{{item.associations[0].subnet_id}}"    # Have one RTB per subnet
+  when: '"ec2" in item.tags.Name'
+  loop: "{{infoReturned.route_tables}}"
+  loop_control:
+    label: "{{item.tags.Name}}"
+
+- name: Add route table information to inventory
+  set_fact:
+    inventory: "{{inventory | combine({'ec2_rtbs':rtbList}, recursive=True)}}"

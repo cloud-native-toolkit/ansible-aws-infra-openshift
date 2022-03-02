@@ -88,27 +88,5 @@
     file: wait.yaml
   when: wait_for_completion and not cluster_exists
 
-- name: Get ROSA Cluster status
-  shell: |
-    {{rosa_path}}rosa describe cluster --cluster {{cluster_name}} | tr -s " " | grep ": " | sed 's/\"//g' | sed 's/ /_/g'
-  args:
-    executable: /bin/bash
-  register: clusterResponse
 
-- name: Convert cluster details to facts
-  set_fact:
-    rosaDict: "{{ rosaDict | default({}) | combine( { item.split(':_')[0] | trim : item.split(':_')[1] | trim } )}}"
-  loop: "{{clusterResponse.stdout_lines}}"
-
-- name: Update inventory with ROSA Cluster details
-  set_fact:
-    inventory: "{{inventory | combine({'rosa':rosaDetails}, recursive=True)}}"
-  vars:
-    rosaDetails:
-      name: "{{rosaDict.Name}}"
-      id: "{{rosaDict.ID}}"
-      console: "{{rosaDict.Console_URL}}"
-      dns: "{{rosaDict.DNS}}"
-      state: "{{rosaDict.State}}"
-  
 

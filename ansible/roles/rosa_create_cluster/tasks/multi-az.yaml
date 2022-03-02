@@ -20,8 +20,9 @@
     --controlplane-iam-role arn:aws:iam::{{accountid}}:role/ManagedOpenShift-ControlPlane-Role \
     --worker-iam-role arn:aws:iam::{{accountid}}:role/ManagedOpenShift-Worker-Role \
     --etcd-encryption \
+    --host-prefix {{host_prefix}} \
     --version {{version}} \
-    --subnet_ids {{subnets|join(",")}}
+    --subnet-ids {{subnets|join(",")}}
 
     exit 0
   args:
