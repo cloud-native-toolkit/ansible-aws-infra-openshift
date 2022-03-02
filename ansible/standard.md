@@ -27,7 +27,7 @@ This module makes use of the following Ansible modules.
 
 1. Edit the standard.yaml file for required configuration if different than the default.
 
-
+    ```
     vars:
         awsProfile: default         # The boto profile to be utilized
         awsRegion: ap-southeast-2   # Region into which to create the VPC and cluster
