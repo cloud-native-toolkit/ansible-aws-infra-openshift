@@ -1,0 +1,42 @@
+---
+
+# Create CIDR info if required
+- name: Determine management CIDR requirements
+  include_tasks: qs-cidr.yaml
+  when: (inventory.cidrs | length == 0)
+
+# Create VPC if required
+- name: Build VPC if not already present
+  include_tasks: qs-vpc.yaml
+  when: (inventory.vpc is defined) and (inventory.vpc | length == 0)
+
+# Create subnets if required
+- name: Create public and private subnets
+  include_tasks: qs-subnets.yaml
+  when: (inventory.subnets is defined) and (inventory.subnets | length == 0)
+
+# Create internet gateway if required
+- name: Create Internet Gateway
+  include_tasks: qs-igw.yaml
+  when: >
+    (inventory.igw is defined) and (inventory.igw | length == 0)
+
+# Create NAT Gateway if required
+- name: Create NAT Gateways for public subnets
+  include_tasks: qs-ngw.yaml
+  when: (inventory.ngw is defined) and (inventory.ngw | length == 0)
+
+# Create Route tables if required
+- name: Create Route Tables
+  include_tasks: qs-rtbs.yaml
+  when: (inventory.rtbs is defined) and (inventory.rtbs | length == 0)
+
+# Create VPC Endpoint for S3 service
+- name: Create VPC Endpoint for S3 service
+  include_tasks: qs-vpce.yaml
+  when: (inventory.vpce is defined) and (inventory.vpce | length == 0)
+
+# Create the ROSA Cluster if required
+- name: Create the ROSA cluster
+  include_tasks: qs-rosa.yaml
+  when: (inventory.rosa is defined) and (inventory.rosa | length == 0)

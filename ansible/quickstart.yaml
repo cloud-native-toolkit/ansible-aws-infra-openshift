@@ -1,6 +1,6 @@
 ---
 
-- name: Create a VPC and OpenShift cluster on AWS with Ansible per the standard reference architecture
+- name: Create a VPC and OpenShift cluster on AWS with Ansible per the quickstart reference architecture
   hosts: localhost
 
   vars:
@@ -8,8 +8,6 @@
     awsRegion: ap-southeast-2
     availZones:    # Add availability zones as required (must all be part of the above region)
     - 'ap-southeast-2a'
-    - 'ap-southeast-2b'
-    - 'ap-southeast-2c'
     resourceGroup: 'recloud'
     vpcCIDR: 10.0.0.0/16
     subnetPrefix: 24
@@ -32,12 +30,12 @@
 
     - name: Read inventory template
       include_vars:
-        file: '{{"./inventory.yaml" if(inv_file.stat.exists) else "./templates/std-inventory.yaml"}}'
+        file: '{{"./inventory.yaml" if(inv_file.stat.exists) else "./templates/qs-inventory.yaml"}}'
 
-    - name: Fail if existing inventory is not for standard architecture
+    - name: Fail if existing inventory is not for quick start architecture
       fail: 
-        msg: "ERROR: Existing inventory is not for standard architecture"
-      when: (arch_type != 'Standard')
+        msg: "ERROR: Existing inventory is not for quick start architecture"
+      when: (arch_type != 'Quickstart')
 
     - name: Add profile to inventory
       set_fact:
@@ -47,9 +45,13 @@
       set_fact:
         inventory: "{{inventory | combine({'region':awsRegion}, recursive=True)}}"
 
+    - name: Add resource to inventory
+      set_fact:
+        inventory: "{{inventory | combine({'resource':resourceGroup|lower}, recursive=True)}}"
+
     - name: Create the VPC, ROSA cluster and associated services
       include_role:
-        name: standard
+        name: quickstart
 
     - name: Record current date
       set_fact:

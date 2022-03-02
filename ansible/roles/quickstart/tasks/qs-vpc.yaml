@@ -1,0 +1,22 @@
+---
+
+- name: Create VPC
+  import_role:
+    name: create_vpc
+  vars:
+    # These variable are defined in the global_vars file
+    envName: "{{resourceGroup|lower}}"
+    vpcName: "{{resourceGroup|lower}}-vpc"
+    usrProfile: "{{inventory.profile}}"
+    reqRegion: "{{inventory.region}}"
+    cidr_block: "{{inventory.cidrs.vpc}}"
+
+- name: Add VPC information to inventory
+  set_fact:
+    inventory: "{{inventory | combine({'vpc':vpcDetails}, recursive=True)}}"
+  vars:
+    vpcDetails: 
+      name: "{{vpcData.tags.Name}}"
+      cidr: "{{vpcData.cidr_block}}"
+      id: "{{vpcData.id}}"
+      state: "{{vpcData.state}}"

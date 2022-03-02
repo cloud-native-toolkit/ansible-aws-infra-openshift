@@ -1,0 +1,41 @@
+---
+
+- name: Add VPC CIDR Fact to Inventory or use existing
+  set_fact:
+    inventory: "{{inventory | combine({'cidrs':{'vpc':vpc_cidr}}, recursive=True)}}"
+  vars:
+    vpc_cidr: "{{inventory.vpc.cidr if(inventory.vpc.cidr is defined) else vpcCIDR}}"
+
+- name: Split VPC CIDR into public and private CIDRs
+  script: ../files/split-subnet.py --cidr {{inventory.cidrs.vpc}} --prefix {{tierPrefix}} --count 2
+  register: cidrReturn
+  failed_when:
+  - cidrReturn.stdout_lines | length < 2
+
+- name: Add public CIDR to inventory
+  set_fact:
+    inventory: "{{inventory | combine({'cidrs':{'public':{'cidr':cidrReturn.stdout_lines[0]}}}, recursive=True) }}"
+
+- name: Add private CIDR to inventory
+  set_fact:
+    inventory: "{{inventory | combine({'cidrs':{'private':{'cidr':cidrReturn.stdout_lines[1]}}}, recursive=True) }}"
+
+- name: Split public CIDR into subnets
+  script: ../files/split-subnet.py --cidr {{inventory.cidrs.public.cidr}} --prefix {{subnetPrefix}}  --count {{availZones | length}}
+  register: cidrReturn
+  failed_when:
+  - cidrReturn.stdout_lines | length < availZones | length
+
+- name: Add public subnet CIDRs to inventory
+  set_fact:
+    inventory: "{{inventory | combine({'cidrs':{'public':{'subnets':cidrReturn.stdout_lines}}}, recursive=True)}}"
+
+- name: Split private CIDR into subnets
+  script: ../files/split-subnet.py --cidr {{inventory.cidrs.private.cidr}} --prefix {{subnetPrefix}}  --count {{availZones | length}}
+  register: cidrReturn
+  failed_when:
+  - cidrReturn.stdout_lines | length < availZones | length
+
+- name: Add private subnet CIDRs to inventory
+  set_fact:
+    inventory: "{{inventory | combine({'cidrs':{'private':{'subnets':cidrReturn.stdout_lines}}}, recursive=True)}}"

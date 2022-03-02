@@ -1,0 +1,42 @@
+---
+
+- name: Get list of subnet ids
+  set_fact:
+    subnet_ids: "{{inventory | json_query('subnets[*].id')}}"
+
+- name: Create the ROSA cluster
+  include_role:
+    name: rosa_create_cluster
+  vars:
+    cluster_name: "{{resourceGroup|lower}}-rosa"
+    machine_cidr: "{{inventory.vpc.cidr}}"
+    subnets: "{{subnet_ids}}"
+    region: "{{inventory.region}}"
+    profile: "{{inventory.profile}}"
+    version: "{{openshift_version}}"
+    wait_for_completion: true
+    new_vpc: False
+
+- name: Get ROSA Cluster details
+  shell: |
+    {{rosa_path}}rosa describe cluster --cluster {{resourceGroup|lower}}-rosa | tr -s " " | grep ": " | sed 's/\"//g' | sed 's/ /_/g'
+  args:
+    executable: /bin/bash
+  register: clusterResponse
+
+- name: Convert cluster details to facts
+  set_fact:
+    rosaDict: "{{ rosaDict | default({}) | combine( { item.split(':_')[0] | trim : item.split(':_')[1] | trim } )}}"
+  loop: "{{clusterResponse.stdout_lines}}"
+
+- name: Update inventory with ROSA Cluster details
+  set_fact:
+    inventory: "{{inventory | combine({'rosa':rosaDetails}, recursive=True)}}"
+  vars:
+    rosaDetails:
+      name: "{{rosaDict.Name}}"
+      id: "{{rosaDict.ID}}"
+      console: "{{rosaDict.Console_URL}}"
+      dns: "{{rosaDict.DNS}}"
+      state: "{{rosaDict.State}}"
+  

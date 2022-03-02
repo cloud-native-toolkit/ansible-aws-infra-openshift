@@ -2,11 +2,11 @@
 
 - name: Query AWS for existing VPC Endpoints
   amazon.aws.ec2_vpc_endpoint_info:
-    region: "{{awsRegion}}"
+    region: "{{inventory.region}}"
     filters:
       vpc-id: "{{inventory.vpc.id}}" 
       vpc-endpoint-state: available
-      "tag:Resource": "{{resourceGroup|lower}}"
+      "tag:Resource": "{{inventory.resource}}"
   register: infoReturned
 
 - name: Fail if more than one VPC Endpoint found
@@ -26,11 +26,11 @@
 - name: Create VPC Endpoint if not present
   amazon.aws.ec2_vpc_endpoint:
     state: present
-    region: "{{awsRegion}}"
+    region: "{{inventory.region}}"
     vpc_id: "{{inventory.vpc.id}}"
-    service: "com.amazonaws.{{awsRegion}}.s3"
+    service: "com.amazonaws.{{inventory.region}}.s3"
     tags:
-      Resource: "{{resourceGroup|lower}}"
+      Resource: "{{inventory.resource}}"
     route_table_ids: "{{rtbList}}"
   when: not vpceExists
   register: createDetails

@@ -28,3 +28,7 @@
     executable: /bin/bash
   delegate_to: localhost
   register: response
+
+
+- debug:
+    msg: "{{response}}"
