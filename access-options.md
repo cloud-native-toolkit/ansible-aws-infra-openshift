@@ -100,7 +100,7 @@ A split tunnel VPN should be enabled for most production scenarios to only direc
 
 1. Associate VPN with subnet
 
-![Associate subnet to VPN](./static/associate-subneto-to-vpn.png)
+![Associate subnet to VPN](./static/associate-subnet-to-vpn.png)
 
 1. Create authorization rule
 

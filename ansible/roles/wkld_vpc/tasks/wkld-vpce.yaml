@@ -4,30 +4,30 @@
   amazon.aws.ec2_vpc_endpoint_info:
     region: "{{inventory.region}}"
     filters:
-      vpc-id: "{{inventory.mgmt.vpc.id}}" 
+      vpc-id: "{{inventory.wkld.vpc.id}}" 
       vpc-endpoint-state: available
       "tag:Resource": "{{inventory.resource}}"
   register: infoReturned
 
 - name: Fail if more than one VPC Endpoint found
   fail:
-    msg: "ERROR: Found multiple VPC Endpoints for VPC {{inventory.mgmt.vpc.name}}"
+    msg: "ERROR: Found multiple VPC Endpoints for VPC {{inventory.wkld.vpc.name}}"
   when: infoReturned.vpc_endpoints | length > 1
 
 - name: Parse for existing VPC Endpoints
   set_fact:
     vpceExists: "{{True if(infoReturned.vpc_endpoints | length > 0) else False}}"
 
-- name: Create list of route tables to be modified
+- name: Create list of 
   set_fact:
     rtbList: "{{rtbList | default([]) + [item.id] }}"
-  loop: "{{inventory.mgmt.rtbs}}"
+  loop: "{{inventory.wkld.rtbs}}"
 
 - name: Create VPC Endpoint if not present
   amazon.aws.ec2_vpc_endpoint:
     state: present
     region: "{{inventory.region}}"
-    vpc_id: "{{inventory.mgmt.vpc.id}}"
+    vpc_id: "{{inventory.wkld.vpc.id}}"
     service: "com.amazonaws.{{inventory.region}}.s3"
     tags:
       Resource: "{{inventory.resource}}"
@@ -37,7 +37,7 @@
 
 - name: Update inventory with VPC Endpoint Details
   set_fact:
-    inventory: "{{inventory | combine({'mgmt':{'vpce':vpceDetails}}, recursive=True) }}"
+    inventory: "{{inventory | combine({'wkld':{'vpce':vpceDetails}}, recursive=True) }}"
   vars:
     vpceDetails:
       id: "{{createDetails.result.vpc_endpoint_id if(not vpceExists) else infoReturned.vpc_endpoints[0].vpc_endpoint_id}}"

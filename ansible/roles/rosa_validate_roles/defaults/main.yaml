@@ -1,9 +1,0 @@
----
-
-rosa_path: "/usr/local/bin/"
-
-account_roles:
-  - "Control plane"
-  - "Installer"
-  - "Support"
-  - "Worker"

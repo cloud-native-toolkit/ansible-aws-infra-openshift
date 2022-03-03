@@ -1,0 +1,112 @@
+---
+
+###
+# Create the subnets
+
+- set_fact:
+    subnetDict: []
+
+# Create a dictionary of subnets to create and add an Exists flag set to false initially (will be updated when AWS queried)
+- name: Create dictionary of ingress subnets to be created
+  set_fact:
+    subnetDict: "{{ subnetDict + [{ 'name': name, 'cidr': item, 'az': az }] }}"
+  vars:
+    name: "{{inventory.resource}}-{{inventory.edge.identifier}}-ingress-subnet-{{idx|string}}"
+    az: "{{inventory.availability_zones[idx]}}"
+  loop: "{{inventory.edge.cidrs.ingress.subnets}}"
+  loop_control:
+    index_var: idx
+
+- name: Add bastion subnets to dictionary
+  set_fact:
+    subnetDict: "{{ subnetDict + [{ 'name': name, 'cidr': item, 'az': az }] }}"
+  vars:
+    name: "{{inventory.resource}}-{{inventory.edge.identifier}}-bastion-subnet-{{idx|string}}"
+    az: "{{inventory.availability_zones[idx]}}"
+  loop: "{{inventory.edge.cidrs.bastion.subnets}}"
+  loop_control:
+    index_var: idx
+
+- name: Add egress subnets to dictionary
+  set_fact:
+    subnetDict: "{{ subnetDict + [{ 'name': name, 'cidr': item, 'az': az }] }}"
+  vars:
+    name: "{{inventory.resource}}-{{inventory.edge.identifier}}-egress-subnet-{{idx|string}}"
+    az: "{{inventory.availability_zones[idx]}}"
+  loop: "{{inventory.edge.cidrs.egress.subnets}}"
+  loop_control:
+    index_var: idx
+
+# Query AWS about each subnet based upon the VPC id and name
+- name: Query AWS for existence of subnets
+  amazon.aws.ec2_vpc_subnet_info:
+    filters: 
+      vpc-id: "{{inventory.edge.vpc.id}}"
+      "tag:Name": "{{item.name}}"
+      "tag:Resource": "{{inventory.resource}}"
+  loop: "{{ subnetDict }}"
+  loop_control:
+    label: "{{item.name}}"
+  register: subnet_info
+
+# Go through returned values to determine which already exist and then modify flag in dict to reflect
+- name: Parse returned data from AWS to determine subnet existance and create new list of subnet data
+  set_fact:
+    newSubnetList: "{{ newSubnetList | default([]) + [{ 'name':item.name, 'cidr': item.cidr, 'az': item.az, 'exists': status }] }}"
+  vars:
+    status: "{{False if(subnet_info.results[idx].subnets | length == 0) else True}}"
+  loop: "{{subnetDict}}"
+  loop_control:
+    index_var: idx
+    label: "{{item.name}}"
+
+- name: Replace existing subnet information with new list
+  set_fact:
+    subnetDict: "{{ newSubnetList }}"
+    newSubnetList: []
+
+# Create Missing Subnets
+- name: Create missing subnets in VPC
+  include_role: 
+    name: create_subnet
+  vars:
+    vpcId: "{{ inventory.edge.vpc.id }}"
+    cidr: "{{ item.cidr }}"
+    reqAZ: "{{ item.az }}"
+    subnetName: "{{ item.name }}"
+    usrProfile: "{{ inventory.profile }}"
+    reqRegion: "{{ inventory.region }}"
+    envName: "{{ inventory.resource }}"
+  when: not item.exists
+  loop: "{{ subnetDict }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+# Append subnet id's to the subnet dictionary
+- name: Query all subnets
+  amazon.aws.ec2_vpc_subnet_info:
+    filters: 
+      vpc-id: "{{ inventory.edge.vpc.id }}"
+      "tag:Resource": "{{ inventory.resource }}"
+  register: subnet_info
+
+- name: Parse returned data from AWS to determine subnet existance and create new list of subnet data
+  set_fact:
+    newSubnetList: "{{newSubnetList | default([]) + [{'name':subnet_name,'avialability_zone':az, 'cidr':cidr, 'id':subnet_id, 'state':state}] }}"
+  vars:
+    subnet_name: "{{item.tags.Name}}"
+    az: "{{item.availability_zone}}"
+    cidr: "{{item.cidr_block}}"
+    subnet_id: "{{item.id}}"
+    state: "{{item.state}}"
+  loop: "{{subnet_info.subnets}}"
+  loop_control:
+    label: "{{item.id}}"
+
+- name: Replace existing subnet information with new list
+  set_fact:
+    subnetDict: "{{ newSubnetList }}"
+
+- name: Write subnet details to inventory
+  set_fact:
+    inventory: "{{inventory | combine({'edge':{'subnets':newSubnetList}}, recursive=True)}}"

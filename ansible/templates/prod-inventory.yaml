@@ -1,9 +1,10 @@
 # Default (empty) cloud inventory
 # Empty items in this list will be created
 
-type: 'Production'
+arch_type: 'Production'
 inventory:
   edge:
+    cidrs: []
     vpc: []
     subnets: []
     igw: []
@@ -11,6 +12,7 @@ inventory:
     nacl: []
     rtbs: []
   mgmt:
+    cidrs: []
     vpc: []
     subnets: []
     igw: []
@@ -18,13 +20,11 @@ inventory:
     rtbs: []
     rosa: []
   wkld:
+    cidrs: []
     vpc: []
     subnets: []
     igw: []
     ngw: []
     rtbs: []
     rosa: []
-  pcxs:
-    edge_mgmt: []
-    edge_wkld: []
-    mgmt_wkld: []
+  pcxs: []

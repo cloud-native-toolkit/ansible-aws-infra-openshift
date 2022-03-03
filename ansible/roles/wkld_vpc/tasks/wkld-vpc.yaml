@@ -2,7 +2,7 @@
 
 - name: Set VPC name
   set_fact:
-    vpc_name: "{{inventory.resource}}-{{inventory.mgmt.identifier}}-vpc"
+    vpc_name: "{{inventory.resource}}-{{inventory.wkld.identifier}}-vpc"
 
 - name: Create management VPC
   import_role:
@@ -12,13 +12,13 @@
     envName: "{{inventory.resource}}"
     vpcName: "{{vpc_name}}"
     usrProfile: "{{inventory.profile}}"
-    reqRegion: "{{inventory.region|default(omit)}}"
+    reqRegion: "{{inventory.region}}"
     # The cidr_block is obtained from the earlier subnet calcs - only create with egress CIDR
-    cidr_block: "{{inventory.mgmt.cidrs.vpc}}"
+    cidr_block: "{{inventory.wkld.cidrs.vpc}}"
 
 - name: Add VPC information to inventory
   set_fact:
-    inventory: "{{inventory | combine({'mgmt':{'vpc':vpcDetails}}, recursive=True)}}"
+    inventory: "{{inventory | combine({'wkld':{'vpc':vpcDetails}}, recursive=True)}}"
   vars:
     vpcDetails: 
       name: "{{vpcData.tags.Name}}"

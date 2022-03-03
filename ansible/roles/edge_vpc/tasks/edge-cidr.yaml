@@ -1,0 +1,59 @@
+---
+####
+
+# Returns subnet CIDRs for a VPC consisting of Ingress, Bastion and Egress tiers (refer archtiecture documentation)
+
+- name: Add VPC CIDR Fact to Inventory or use existing
+  set_fact:
+    inventory: "{{inventory | combine({'edge':{'cidrs':{'vpc':vpcCIDR}}}, recursive=True)}}"
+  vars:
+    vpcCIDR: "{{inventory.edge.cidrs.vpc if(inventory.edge.cidrs.vpc is defined) else vpc_cidr}}"
+
+# Calculate the edge subnets
+- name: Split VPC CIDR into ACL subnets
+  script: ../files/split-subnet.py --cidr {{inventory.edge.cidrs.vpc}} --prefix {{tierPrefix}} --count 3 
+  register: cidrReturn
+  failed_when:
+  - cidrReturn.stdout_lines | length < 3
+
+- name: Add ingress CIDR information to inventory
+  set_fact:
+    inventory: "{{inventory | combine({'edge': {'cidrs': {'ingress': {'cidr': cidrReturn.stdout_lines[0]}}}}, recursive=True)}}"
+
+- name: Add bastion CIDR information to inventory
+  set_fact:
+    inventory: "{{inventory | combine({'edge': {'cidrs': {'bastion': {'cidr': cidrReturn.stdout_lines[1]}}}}, recursive=True)}}"
+
+- name: Add egress CIDR information to inventory
+  set_fact:
+    inventory: "{{inventory | combine({'edge': {'cidrs': {'egress': {'cidr': cidrReturn.stdout_lines[2]}}}}, recursive=True)}}"
+
+- name: Split ingress subnet into subnets by availability zone
+  script: ../files/split-subnet.py --cidr {{inventory.edge.cidrs.ingress.cidr}} --prefix {{subnetPrefix}} --count {{inventory.availability_zones | length}}
+  register: cidrReturn
+  failed_when:
+  - cidrReturn.stdout_lines | length < inventory.availability_zones | length
+
+- name: Add ingress subnet CIDRs to inventory
+  set_fact:
+    inventory: "{{inventory | combine({'edge': {'cidrs': {'ingress': {'subnets':cidrReturn.stdout_lines}}}}, recursive=True) }}"
+
+- name: Split bastion subnet into subnets by availability zone
+  script: ../files/split-subnet.py --cidr {{inventory.edge.cidrs.bastion.cidr}} --prefix {{subnetPrefix}} --count {{inventory.availability_zones | length}}
+  register: cidrReturn
+  failed_when:
+  - cidrReturn.stdout_lines | length < inventory.availability_zones | length
+
+- name: Add bastion subnet CIDRs to inventory
+  set_fact:
+    inventory: "{{inventory | combine({'edge': {'cidrs': {'bastion': {'subnets':cidrReturn.stdout_lines}}}}, recursive=True) }}"
+
+- name: Split egress subnet into subnets by availability zone
+  script: ../files/split-subnet.py --cidr {{inventory.edge.cidrs.egress.cidr}} --prefix {{subnetPrefix}} --count {{inventory.availability_zones | length}}
+  register: cidrReturn
+  failed_when:
+  - cidrReturn.stdout_lines | length < inventory.availability_zones | length
+
+- name: Add egress subnet CIDRs to inventory
+  set_fact:
+    inventory: "{{inventory | combine({'edge': {'cidrs': {'egress': {'subnets':cidrReturn.stdout_lines}}}}, recursive=True) }}"

@@ -4,14 +4,12 @@
 
 # Valdiate ROSA API Access
 - name: Verify ROSA API access and configuration
-  import_role:
-    name: rosa_validate_access
+  include_tasks:  validate-access.yaml
   vars:
-    profile: "{{awsProfile}}"
-    region: "{{awsRegion}}"
+    profile: "{{inventory.profile}}"
+    region: "{{inventory.region}}"
 
 - name: Verify account roles
-  import_role:
-    name: rosa_validate_roles
+  include_tasks: validate-roles.yaml
 
 # To do - add validation of quota and permissions

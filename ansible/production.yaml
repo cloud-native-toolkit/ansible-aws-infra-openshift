@@ -2,15 +2,25 @@
 
 - name: Create IBM reference architecture on AWS
   hosts: localhost
+
+
+  vars:
+    awsProfile: default
+    awsRegion: ap-southeast-2
+    availZones:    # Add availability zones as required (must all be part of the above region)
+    - 'ap-southeast-2a'
+    resourceGroup: 'recloud'  
+    edge_name: 'edge'     # This forms the name of the VPC and other components - refer reference architecture
+    wkld_name: 'wkld'     # This forms the name of the VPC and other components - refer reference architecture
+    mgmt_name: 'mgmt'     # This forms the name of the VPC and other components - refer reference architecture
+    edge_cidr: 10.0.0.0/16
+    mgmt_cidr: 10.1.0.0/16
+    wkld_cidr: 10.2.0.0/16
+    tierPrefix: 18       # This will be used to break the VPC CIDR up into subnets (public/private or ingress/egress)
+    subnetPrefix: 24     # This is the prefix for the individual subnets within each tier
+    openshift_version: 4.9.21
+
   tasks:
-
-    - include_vars:
-        file: ./inventory.yaml
-
-    - name: Validate entries and backup old inventory file
-      template:
-        src: ./templates/inventory.j2
-        dest: ./old_inventory.yaml
 
     - name: Get the current time
       command: date
@@ -20,26 +30,131 @@
       set_fact:
         start_time: '{{dateResponse.stdout_lines[0]}}'
 
+    - name: Check if inventory file exists
+      stat:
+        path: ./inventory.yaml
+      register: inv_file
+
+    - name: Read inventory template
+      include_vars:
+        file: '{{"./inventory.yaml" if(inv_file.stat.exists) else "./templates/prod-inventory.yaml"}}'
+
+    - name: Fail if existing inventory is not for production architecture
+      fail: 
+        msg: "ERROR: Existing inventory is not for production architecture"
+      when: (arch_type != 'Production')
+
+    - name: Add profile to inventory
+      set_fact:
+        inventory: "{{inventory | combine({'profile':profile}, recursive=True)}}"
+      vars:
+        profile: "{{awsProfile if(awsProfile is defined) else 'default'}}"
+      when: inventory.profile is not defined
+
+    - name: Add region to inventory
+      set_fact:
+        inventory: "{{inventory | combine({'region':region}, recursive=True)}}"
+      vars: 
+        region: "{{awsRegion if(awsRegion is defined) else 'ap-southeast-2'}}"
+      when: inventory.region is not defined
+
+    - name: Add resource to inventory
+      set_fact:
+        inventory: "{{inventory | combine({'resource':prefix}, recursive=True)}}"
+      vars: 
+        prefix: "{{resourceGroup|lower if(resourceGroup is defined) else 'mycloud'}}"
+      when: inventory.resource is not defined
+
+    - name: Add availability zones to inventory
+      set_fact:
+        inventory: "{{inventory | combine({'availability_zones':zones}, recursive=True)}}"
+      vars: 
+        zones: "{{availZones if(availZones is defined) else inventory.region+'a'}}"
+      when: inventory.avialability_zones is not defined
+
+    - name: Add edge CIDR to inventory
+      set_fact:
+        inventory: "{{inventory | combine({'edge':{'cidrs':{'vpc':cidr}}}, recursive=True)}}"
+      vars: 
+        cidr: "{{edge_cidr if(edge_cidr is defined) else '10.0.0.0/16'}}"
+      when: >
+        (inventory.edge.cidrs.vpc is not defined) and
+        (inventory.edge is defined)
+
+    - name: Add management CIDR to inventory
+      set_fact:
+        inventory: "{{inventory | combine({'mgmt':{'cidrs':{'vpc':cidr}}}, recursive=True)}}"
+      vars: 
+        cidr: "{{mgmt_cidr if(mgmt_cidr is defined) else '10.1.0.0/16'}}"
+      when: >
+        (inventory.mgmt.cidrs.vpc is not defined) and
+        (inventory.mgmt is defined)
+
+    - name: Add workload CIDR to inventory
+      set_fact:
+        inventory: "{{inventory | combine({'wkld':{'cidrs':{'vpc':cidr}}}, recursive=True)}}"
+      vars: 
+        cidr: "{{mgmt_cidr if(wkld_cidr is defined) else '10.2.0.0/16'}}"
+      when: >
+        (inventory.wkld.cidrs.vpc is not defined) and
+        (inventory.wkld is defined)
+
+    - name: Add edge identifier to inventory
+      set_fact:
+        inventory: "{{inventory | combine({'edge':{'identifier':name}}, recursive=True)}}"
+      vars:
+        name: "{{edge_name|lower if(edge_name is defined) else 'edge'}}"
+      when: >
+        (inventory.edge.identifier is not defined) and
+        (inventory.edge is defined)
+
+    - name: Add management identifier to inventory
+      set_fact:
+        inventory: "{{inventory | combine({'mgmt':{'identifier':name}}, recursive=True)}}"
+      vars:
+        name: "{{mgmt_name|lower if(mgmt_name is defined) else 'mgmt'}}"
+      when: >
+        (inventory.mgmt.identifier is not defined) and
+        (inventory.mgmt is defined)
+
+    - name: Add workload identifier to inventory
+      set_fact:
+        inventory: "{{inventory | combine({'wkld':{'identifier':name}}, recursive=True)}}"
+      vars:
+        name: "{{wkld_name|lower if(wkld_name is defined) else 'wkld'}}"
+      when: >
+        (inventory.wkld.identifier is not defined) and
+        (inventory.wkld is defined)
+
     - include_role:
         name: validate_prereq
       when: (inventory.mgmt.rosa is defined) or (inventory.wkld.rosa is defined)
 
     - include_role:
-        name: edge_cidrs
-      when: inventory.edge is defined    
-
-    - include_role:
         name: edge_vpc
-      when: (inventory.edge.vpc is defined) and (inventory.edge.vpc | length == 0)
-
-    - include_role:
-        name: edge_subnets
-      when: (inventory.edge.subnets is defined) and (inventory.edge.subnets | length == 0)
+      when: (inventory.edge is defined)
 
     - include_role:
         name: mgmt_vpc
       when: (inventory.mgmt is defined)
-    
+
+    - include_role:
+        name: wkld_vpc
+      when: (inventory.wkld is defined)
+
+# Add wait tasks for ROSA clusters below before proceeding
+
+    - include_role:
+        name: vpc_networking
+      when: (inventory.pcxs is defined)
+
+# Needs to also modify mgmt and wkld VPCs
+# Include RTB across all VPCs
+    - include_role:
+        name: edge_rtbs
+      when: inventory.edge.rtbs is defined
+
+# Add the below to the tasks in each VPC    
     - include_role:
         name: management_rosa
       when: (inventory.mgmt.rosa is defined) and (inventory.mgmt.rosa | length == 0)
@@ -47,42 +162,8 @@
     - include_role:
         name: workload_rosa
       when: (inventory.wkld.rosa is defined) and (inventory.wkld.rosa | length == 0)  
-    
-    - include_role:
-        name: edge_cvpn
-      when: (inventory.edge.cvpn is defined) and (inventory.edge.cvpn | length == 0)
 
-    - include_role:
-        name: edge_igw
-      when: (inventory.edge.igw is defined) and (inventory.edge.igw | length == 0)
-
-    - include_role:
-        name: edge_ngw
-      when: (inventory.edge.ngw is defined) and (inventory.edge.ngw | length == 0)
-
-    - include_role:
-        name: edge_nacl
-      when: (inventory.edge.nacl is defined) and (inventory.edge.nacl | length == 0)
-
-    - include_role:
-        name: wait_for_cluster_creation
-      vars: 
-        cluster_name: inventory.mgmt.rosa.name
-      when: inventory.mgmt.rosa is defined  
-
-    - include_role:
-        name: wait_for_cluster_creation
-      vars: 
-        cluster_name: inventory.wkld.rosa.name
-      when: inventory.wkld.rosa is defined  
-
-    - include_role:
-        name: vpc_networking
-      when: (inventory.pcxs is defined) and (inventory.pcxs | length > 0)
-
-    - include_role:
-        name: edge_rtbs
-      when: inventory.edge.rtbs is defined
+# Add task to add NACL to clusters
 
     - name: Get the current time
       command: date
@@ -91,6 +172,10 @@
     - name: Record current date
       set_fact:
         end_time: '{{dateResponse.stdout_lines[0]}}'
+
+    - name: Update last update time to inventory
+      set_fact:
+        inventory: "{{inventory | combine({'Last_Update':end_time}, recursive=True)}}"
 
     - name: Write updated inventory file
       template:

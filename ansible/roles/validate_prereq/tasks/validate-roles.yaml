@@ -1,0 +1,34 @@
+---
+
+# Ansible role to validate that the account roles have been configured
+
+- name: Clear variables
+  set_fact:
+    response: []
+    accountList: []
+
+- name: Query ROSA for configured account roles
+  shell: |
+    set timeout 300
+
+    {{rosa_path}}rosa list account-roles
+
+    exit 0
+  args:
+    executable: /bin/bash
+  delegate_to: localhost
+  register: response
+
+- name: Parse output for acocunt role existence
+  set_fact:
+    accountList: "{{ accountList + [{ 'Name':item,'Exists':status }] }}"
+  vars:
+    status: "{{True if(item in response.stdout) else False}}"
+  loop: "{{account_roles}}"
+
+- fail:
+    msg: [
+      "Account role {{item.Name}} is not configured. Please configure and re-run."
+    ]
+  when: not item.Exists
+  loop: "{{accountList}}"

@@ -1,0 +1,26 @@
+---
+
+###
+# Create the internet gateway
+
+- name: Set IGW name
+  set_fact:
+    igw_name: "{{ inventory.resource }}-{{ inventory.edge.identifier }}-igw"
+
+- name: Create the internet gateway
+  import_role:
+    name: create_igw
+  vars:
+    vpcId: "{{ inventory.edge.vpc.id }}"
+    igwName: "{{ igw_name }}"
+    usrProfile: "{{ inventory.profile }}"
+    reqRegion: "{{ inventory.region }}"
+    envName: "{{ inventory.resource }}"
+
+- name: Update inventory data with gateway details
+  set_fact:
+    inventory: "{{inventory | combine({'edge':{'igw':igwDetails}}, recursive=True)}}"
+  vars:
+    igwDetails: 
+      name: "{{ igw_name }}"
+      id: "{{igwData.gateway_id if(igwData.gateway_id is defined) else igwData.internet_gateway_id}}"

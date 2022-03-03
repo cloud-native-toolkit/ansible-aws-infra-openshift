@@ -1,0 +1,23 @@
+---
+- name: Set Internet Gateway name
+  set_fact: 
+    igw_name: "{{inventory.resource}}-{{inventory.wkld.identifier}}-igw"
+
+- name: Create IGW
+  include_role:
+    name: create_igw
+  vars:
+    igwName: "{{igw_name}}"
+    envName: "{{inventory.resource}}"
+    vpcId: "{{inventory.wkld.vpc.id}}"
+    reqRegion: "{{inventory.region}}"
+    usrProfile: "{{inventory.profile}}"
+
+
+- name: Update inventory with IGW details
+  set_fact:
+    inventory: "{{inventory | combine({'wkld':{'igw':igwDetails}}, recursive=True)}}"
+  vars:
+    igwDetails: 
+      name: "{{igw_name}}"
+      id: "{{igwData.gateway_id if(igwData.gateway_id is defined) else igwData.internet_gateway_id}}"

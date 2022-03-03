@@ -3,7 +3,10 @@
 # Create CIDR info if required
 - name: Determine management CIDR requirements
   include_tasks: mgmt-cidr.yaml
-  when: (inventory.mgmt.cidrs | length == 0)
+  when: >
+    (inventory.mgmt.cidrs is defined) and
+    ((inventory.mgmt.cidrs.private is not defined) or
+    (inventory.mgmt.cidrs.public is not defined))
 
 # Create VPC if required
 - name: Build Management VPC if not already present

@@ -12,18 +12,18 @@
 - name: Create list of public route tables to create
   set_fact:
     publicRTBs: "{{publicRTBs | default([]) + [{'name':name, 'subnet_id':item.id}]}}"
-  loop: "{{inventory.mgmt.subnets}}"
+  loop: "{{inventory.wkld.subnets}}"
   loop_control:
     index_var: idx
     label: "{{item.name}}"
   vars:
-    name: "{{inventory.resource}}-{{inventory.mgmt.identifier}}-public-rtb-{{idx|string}}"
+    name: "{{inventory.resource}}-{{inventory.wkld.identifier}}-public-rtb-{{idx|string}}"
   when: '"public" in item.name'
 
 - name: Query AWS for existing of public route tables
   amazon.aws.ec2_vpc_route_table_info:
     filters:
-      vpc-id: "{{ inventory.mgmt.vpc.id }}"
+      vpc-id: "{{ inventory.wkld.vpc.id }}"
       "tag:Name": "{{item.name}}"
     profile: "{{inventory.profile}}"
     region: "{{inventory.region}}"
@@ -50,7 +50,7 @@
 
 - name: Create public route tables if they do not exist
   amazon.aws.ec2_vpc_route_table:
-    vpc_id: "{{ inventory.mgmt.vpc.id }}"
+    vpc_id: "{{ inventory.wkld.vpc.id }}"
     region: "{{ inventory.region }}"
     profile: "{{ inventory.profile }}"
     tags:
@@ -58,10 +58,10 @@
       Resource: "{{inventory.resource}}"
     subnets: "{{ item.subnet_id }}"
     routes:
-      - dest: "{{ inventory.mgmt.cidrs.vpc }}"  
+      - dest: "{{ inventory.wkld.cidrs.vpc }}"  
         gateway_id: 'local'
       - dest: '0.0.0.0/0'     # return connectivity traffic
-        gateway_id: "{{ inventory.mgmt.igw.id }}"
+        gateway_id: "{{ inventory.wkld.igw.id }}"
   when: not item.exists
   loop: "{{publicRTBs}}"
 
@@ -70,18 +70,18 @@
 - name: Create list of private route tables to create
   set_fact:
     privateRTBs: "{{privateRTBs | default([]) + [{'name':name, 'subnet_id':item.id}]}}"
-  loop: "{{inventory.mgmt.subnets}}"
+  loop: "{{inventory.wkld.subnets}}"
   loop_control:
     index_var: idx
     label: "{{item.name}}"
   vars:
-    name: "{{inventory.resource}}-{{inventory.mgmt.identifier}}-private-rtb-{{idx|string}}"
+    name: "{{inventory.resource}}-{{inventory.wkld.identifier}}-private-rtb-{{idx|string}}"
   when: '"private" in item.name'
 
 - name: Query AWS for existing of public route tables
   amazon.aws.ec2_vpc_route_table_info:
     filters:
-      vpc-id: "{{ inventory.mgmt.vpc.id }}"
+      vpc-id: "{{ inventory.wkld.vpc.id }}"
       "tag:Name": "{{item.name}}"
     profile: "{{inventory.profile}}"
     region: "{{inventory.region}}"
@@ -108,7 +108,7 @@
 
 - name: Create private route tables if they do not exist
   amazon.aws.ec2_vpc_route_table:
-    vpc_id: "{{ inventory.mgmt.vpc.id }}"
+    vpc_id: "{{ inventory.wkld.vpc.id }}"
     region: "{{ inventory.region }}"
     profile: "{{ inventory.profile }}"
     tags:
@@ -116,10 +116,10 @@
       Resource: "{{inventory.resource}}"
     subnets: "{{ item.subnet_id }}"
     routes:
-      - dest: "{{ inventory.mgmt.cidrs.vpc }}"  
+      - dest: "{{ inventory.wkld.cidrs.vpc }}"  
         gateway_id: 'local'
       - dest: '0.0.0.0/0'     # Internet connectivity
-        gateway_id: "{{ inventory.mgmt.ngw[idx].id }}"
+        gateway_id: "{{ inventory.wkld.ngw[idx].id }}"
   when: not item.exists
   loop: "{{privateRTBs}}"
   loop_control:
@@ -131,7 +131,7 @@
 - name: Query AWS for existence of route tables with resource tag in management VPC
   amazon.aws.ec2_vpc_route_table_info:
     filters:
-      vpc-id: "{{ inventory.mgmt.vpc.id }}"
+      vpc-id: "{{ inventory.wkld.vpc.id }}"
       "tag:Resource": "{{inventory.resource}}"
     profile: "{{inventory.profile}}"
     region: "{{inventory.region}}"
@@ -154,4 +154,4 @@
 
 - name: Add route table information to inventory
   set_fact:
-    inventory: "{{inventory | combine({'mgmt':{'rtbs':rtbList}}, recursive=True)}}"
+    inventory: "{{inventory | combine({'wkld':{'rtbs':rtbList}}, recursive=True)}}"

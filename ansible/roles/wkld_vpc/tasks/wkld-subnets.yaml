@@ -10,10 +10,22 @@
   set_fact:
     subnetList: "{{subnetList + [{ 'name':name, 'cidr':cidr, 'availability_zone':az }] }}"
   vars:
-    name: "{{inventory.resource}}-{{inventory.mgmt.identifier}}-private-subnet-{{idx}}"
+    name: "{{inventory.resource}}-{{inventory.wkld.identifier}}-private-{{idx}}"
     cidr: "{{item}}"
     az: "{{inventory.availability_zones[idx]}}"
-  loop: "{{inventory.mgmt.cidrs.private.subnets}}"
+  loop: "{{inventory.wkld.cidrs.private.subnets}}"
+  loop_control:
+    index_var: idx
+    label: "{{item}}"
+
+- name: Create list of required public subnets
+  set_fact:
+    subnetList: "{{subnetList + [{ 'name':name, 'cidr':cidr, 'availability_zone':az }] }}"
+  vars:
+    name: "{{inventory.resource}}-{{inventory.wkld.identifier}}-public-{{idx}}"
+    cidr: "{{item}}"
+    az: "{{inventory.availability_zones[idx]}}"
+  loop: "{{inventory.wkld.cidrs.public.subnets}}"
   loop_control:
     index_var: idx
     label: "{{item}}"
@@ -22,7 +34,7 @@
 - name: Query AWS for list of existing subnets in VPC
   amazon.aws.ec2_vpc_subnet_info:
     filters:
-      vpc-id: "{{inventory.mgmt.vpc.id}}"
+      vpc-id: "{{inventory.wkld.vpc.id}}"
       "tag:Resource": "{{inventory.resource}}"
       "tag:Name": "{{item.name}}"
   register: subnet_info
@@ -63,7 +75,7 @@
   include_role:
     name: create_subnet
   vars:
-    vpcId: "{{ inventory.mgmt.vpc.id }}"
+    vpcId: "{{ inventory.wkld.vpc.id }}"
     cidr: "{{ item.cidr }}"
     reqAZ: "{{ item.availability_zone }}"
     subnetName: "{{item.name}}"
@@ -79,7 +91,7 @@
 - name: Query AWS for list of existing subnets in VPC
   amazon.aws.ec2_vpc_subnet_info:
     filters:
-      vpc-id: "{{inventory.mgmt.vpc.id}}"
+      vpc-id: "{{inventory.wkld.vpc.id}}"
       "tag:Resource": "{{inventory.resource}}"
       "tag:Name": "{{item.name}}"
   register: subnet_info
@@ -115,4 +127,4 @@
 
 - name: Write subnet details to inventory
   set_fact:
-    inventory: "{{inventory | combine({'mgmt':{'subnets':subnetList}}, recursive=True) }}"
+    inventory: "{{inventory | combine({'wkld':{'subnets':subnetList}}, recursive=True) }}"

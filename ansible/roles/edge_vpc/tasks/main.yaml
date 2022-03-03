@@ -1,26 +1,33 @@
 ---
 
-- name: Create edge VPC
-  import_role:
-    name: create_vpc
-  vars:
-    # These variable are defined in the global_vars file
-    envName: "{{resourceGroup|lower}}"
-    vpcName: "{{resourceGroup|lower}}-{{edge|lower}}-vpc"
-    usrProfile: "{{awsProfile}}"
-    reqRegion: "{{awsRegion|default(omit)}}"
-    # The cidr_block is obtained from the earlier subnet calcs - only create with egress CIDR
-    cidr_block:
-      - "{{inventory.edge.cidrs.ingress.cidr}}"
-      - "{{inventory.edge.cidrs.bastion.cidr}}"
-      - "{{inventory.edge.cidrs.egress.cidr}}"
+# Create CIDR info if required
+- name: Determine management CIDR requirements
+  include_tasks: edge-cidr.yaml
+  when: >
+    (inventory.edge.cidrs is defined) and
+    ((inventory.edge.cidrs.ingress is not defined) or
+    (inventory.edge.cidrs.egress is not defined) or
+    (inventory.edge.cidrs.bastion is not defined))
 
-- name: Add VPC information to inventory
-  set_fact:
-    inventory: "{{inventory | combine({'edge':{'vpc':vpcDetails}}, recursive=True)}}"
-  vars:
-    vpcDetails: 
-      name: "{{vpcData.tags.Name}}"
-      cidr: "{{vpcData.cidr_block}}"
-      id: "{{vpcData.id}}"
-      state: "{{vpcData.state}}"
+# Create VPC if required
+- name: Build VPC if not already present
+  include_tasks: edge-vpc.yaml
+  when: (inventory.edge.vpc is defined) and (inventory.edge.vpc | length == 0)
+
+# Create subnets if required
+- name: Create ingress, egress and bastion subnets
+  include_tasks: edge-subnets.yaml
+  when: (inventory.edge.subnets is defined) and (inventory.edge.subnets | length == 0)
+
+# Create internet gateway if required
+- name: Create Internet Gateway
+  include_tasks: edge-igw.yaml
+  when: >
+    (inventory.edge.igw is defined) and (inventory.edge.igw | length == 0)
+
+# Create NAT Gateway if required
+- name: Create NAT Gateways for public subnets
+  include_tasks: edge-ngw.yaml
+  when: (inventory.edge.ngw is defined) and (inventory.edge.ngw | length == 0)
+
+# Add security group defaults

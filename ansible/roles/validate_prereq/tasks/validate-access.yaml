@@ -1,0 +1,60 @@
+---
+
+- name: Clear variables
+  set_fact:
+    response: []
+    rosa: []
+    response_default: []
+    response_nondefault: []
+
+- name: Query for ROSA CLI access (default region)
+  shell: |
+    set timeout 300
+
+    {{rosa_path}}rosa whoami \
+    --profile {{profile}}
+
+    exit 0
+  args:
+    executable: /bin/bash
+  delegate_to: localhost
+  register: response_default
+  when: region is not defined
+
+- name: Query for ROSA CLI access (non-default region)
+  shell: |
+    set timeout 300
+
+    {{rosa_path}}rosa whoami \
+    --profile {{profile}} \
+    --region {{region}}
+
+    exit 0
+  args:
+    executable: /bin/bash
+  delegate_to: localhost
+  register: response_nondefault
+  when: region is defined
+
+- name: Select which response to utilize
+  set_fact:
+    response: "{{response_nondefault if(region is defined) else response_default}}"
+
+- name: Fail if command was unsuccessful
+  fail:
+    msg: "Unable to run rosa CLI. Please correct and try again."
+  when: response.rc != 0
+
+- name: Parse access response
+  set_fact:
+    rosa: "{{rosa | default() | combine({'access':status})}}"
+  vars:
+    status: "{{True if(('AWS Account ID' in response.stdout) and ('OCM Account ID' in response.stdout)) else False}}"
+
+- name: Fail if ROSA Access not configured
+  fail:
+    msg: [
+      "Unable to proceed. Please configure ROSA CLI access and try again."
+    ]
+  when: not rosa.access
+

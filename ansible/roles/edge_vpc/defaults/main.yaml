@@ -1,0 +1,14 @@
+
+# CIDR Defaults
+vpc_cidr: 10.0.0.0/16
+
+# Tier is the subnet split between public and private
+tierPrefix: 18
+
+# The individual availabiltiy zone subnet prefix
+subnetPrefix: 24
+
+# Path to executables on local host
+aws_path: "/usr/local/bin/"
+rosa_path: "/usr/local/bin/"
+aws_config_path: "~/.aws/"
