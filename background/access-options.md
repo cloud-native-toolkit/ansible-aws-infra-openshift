@@ -14,7 +14,7 @@ This readme goes through options tested to access services deployed in AWS.
 1. Edit Network ACL for subnet to allow inbound traffic
 1. Edit route table to ensure outbound traffic is directed to internet gateway
 
-![Route table for internet access (inbound or outbound)](./static/route-table-1.png)
+![Route table for internet access (inbound or outbound)](../static/route-table-1.png)
 
 1. Create a key pair for access
 1. Copy key to .ssh and make private (chmod 400 *.pem)
@@ -25,7 +25,7 @@ This readme goes through options tested to access services deployed in AWS.
 
 Scenario: Instance is deployed to subnet in VPC. 
 
-![Basic Access Architecture Overview](./static/basic-access.png)
+![Basic Access Architecture Overview](../static/basic-access.png)
 
 
 1. Launch EC2 instance
@@ -36,7 +36,7 @@ Scenario: Instance is deployed to subnet in VPC.
         - choose VPC and subnet
         - select auto-assign public IP address
 
-        ![Configure instance details](/static/config-instance.png)
+        ![Configure instance details](../static/config-instance.png)
 
     1. Configure storage
 
@@ -46,11 +46,11 @@ Scenario: Instance is deployed to subnet in VPC.
 
     1. Review settings
 
-    ![Settings review](./static/review-and-launch.png)
+    ![Settings review](../static/review-and-launch.png)
 
     1. Launch and choose key pair
 
-    ![Launch dialog](./static/launch.png)
+    ![Launch dialog](../static/launch.png)
 
 1. Access instance
 
@@ -58,27 +58,27 @@ Scenario: Instance is deployed to subnet in VPC.
 
     1. Get public IP address
 
-    ![Locate Public IP](./static/locate-public-ip.png)
+    ![Locate Public IP](../static/locate-public-ip.png)
 
     1. ssh to instance
 
             $ ssh -i ~/.ssh/fs-cloud-test.pem ubuntu@3.239.62.237
 
-    ![Login success](./static/login-success-1.png)
+    ![Login success](../static/login-success-1.png)
 
     1. Confirm instance network settings
 
-    ![Instance network view](./static/instance-ip.png)
+    ![Instance network view](../static/instance-ip.png)
 
 --- 
 
 ## Option 2. VPN connection (Preferred for production)
 
-![VPN Access Architecture Overview](./static/vpn-access.png)
+![VPN Access Architecture Overview](../static/vpn-access.png)
 
 Alternately, additional subnets can be configured with the VPN endpoint to create a multi-AZ architecture as follows.
 
-![Multi-Availability Zone Architecture Overview](./static/vpn-multi-az.png)
+![Multi-Availability Zone Architecture Overview](../static/vpn-multi-az.png)
 
 This method uses mutual authentication via RSA certificates. Other options include the use of SAML.
 
@@ -88,7 +88,7 @@ This method uses mutual authentication via RSA certificates. Other options inclu
 
     1. Go to AWS Certificate Management (ACM) and confirm certificates are uploaded
 
-    ![Uploaded certificates](./static/uploaded-certificates.png)
+    ![Uploaded certificates](../static/uploaded-certificates.png)
 
 1. Create a VPN endpoint
 
@@ -96,23 +96,23 @@ Note that the client CIDR is the pool from which IP addresses are assigned for i
 
 A split tunnel VPN should be enabled for most production scenarios to only direct traffic from the client that is destined for the AWS region over the VPN link. Doing so does require the route table to be created with all the relevant routes for the customer's AWS environment.
 
-![VPN Endpoint Creation](./static/create-vpn-endpoint.png)
+![VPN Endpoint Creation](../static/create-vpn-endpoint.png)
 
 1. Associate VPN with subnet
 
-![Associate subnet to VPN](./static/associate-subnet-to-vpn.png)
+![Associate subnet to VPN](../static/associate-subnet-to-vpn.png)
 
 1. Create authorization rule
 
-![Authorize VPN access to subnet](./static/authorize-vpn-access.png)
+![Authorize VPN access to subnet](../static/authorize-vpn-access.png)
 
 1. Download the OpenVPN configuration file
 
-![Download VPN client configuration file](./static/vpn-config-download.png)
+![Download VPN client configuration file](../static/vpn-config-download.png)
 
 1. Edit the downloaded configuration file to add the client certificate and key previously created. client1.domain.tld.cert and client1.domain.tld.key.
 
-![Added client certificate and key to VPN client config](./static/vpn-config-file.png)
+![Added client certificate and key to VPN client config](../static/vpn-config-file.png)
 
 1. Setup the client (OpenVPN in this case)
 
@@ -126,14 +126,14 @@ For this example, a separate VM on the same network as the configuration Mac was
 
             $ sudo openvpn --config ~/Documents/vpn-config.ovpn
 
-    ![OpenVPN connection output - begining](./static/openvpn-connection-1.png)
-    ![OpenVPN connection output - complete](./static/openvpn-connection-2.png)
+    ![OpenVPN connection output - begining](../static/openvpn-connection-1.png)
+    ![OpenVPN connection output - complete](../static/openvpn-connection-2.png)
 
     1. SSH to the EC2 instance
 
             $ ssh -i ~/.ssh/fs-cloud-test.pem ubuntu@10.1.10.139
 
-    ![Connection to instance via VPN](./static/instance-connection-via-vpn.png)
+    ![Connection to instance via VPN](../static/instance-connection-via-vpn.png)
 
 ## Option 3. Red Hat OpenShift on AWS (ROSA)
 

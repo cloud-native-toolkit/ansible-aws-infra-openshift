@@ -6,6 +6,10 @@
   when: (inventory.pcxs is defined)
 
 # Create edge VPC route tables
+- name: Create the edge VPC route tables and assign to subnets
+  include_tasks: edge-rtbs.yaml
+  when: (inventory.edge.rtbs is defined)
+  
 # Create management VPC route tables
 # Create workload VPC route tables
 # Create management VPC Endpoint

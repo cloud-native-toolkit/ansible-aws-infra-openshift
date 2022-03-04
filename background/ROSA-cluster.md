@@ -14,19 +14,19 @@ This guide goes through how to deploy a custom Red Hat OpenShift on AWS (ROSA) c
 
         $ rosa whoami
 
-    ![Verify credentials output](./static/rosa-whoami-output.png)
+    ![Verify credentials output](../static/rosa-whoami-output.png)
 
     Verify quota
 
         $ rosa verify quota
 
-    ![Verify quota output](./static/rosa-verifyquota-output.png)
+    ![Verify quota output](../static/rosa-verifyquota-output.png)
 
 1. Create account roles and configuration files
 
         $ rosa create account-roles --mode manual
 
-    ![Create account role output](./static/rosa-createroles-output.png)
+    ![Create account role output](../static/rosa-createroles-output.png)
 
 1. Download and install the OpenShift command line tool if not already
 
@@ -52,7 +52,7 @@ where
 A NAT gateway is configured on the public subnet for IPv6 traffic.
 A VPC endpoint is created for access to AWS services from either the private or public IP subnets.
 
-![Default ROSA Cluster](./static/default-rosa.png)
+![Default ROSA Cluster](../static/default-rosa.png)
 
 ## Multiple AZ cluster configuration
 
@@ -93,7 +93,7 @@ where:
 
 The end result is a deployment with the following architecture.
 
-![ROSA Multi-AZ Deployment Architecture](./static/multi-az-rosa.png)
+![ROSA Multi-AZ Deployment Architecture](../static/multi-az-rosa.png)
 
 The following AWS elements are created (these are created with Terraform)
 
@@ -124,7 +124,7 @@ The default cluster creates its own VPC and associated network components which 
 
 The prerequisites for deploying a ROSA PrivateLink cluster are documented on the Red Hat site [here](https://docs.openshift.com/rosa/rosa_getting_started/rosa-aws-privatelink-creating-cluster.html) and summarized in the following table from that site.
 
-![ROSA VPC Rereqs](./static/rosa-privatelink-prereqs.png)
+![ROSA VPC Rereqs](../static/rosa-privatelink-prereqs.png)
 
 Since these prerequisites require no internet connectivity from the VPC, it does not fit the architecture being created for FS Cloud which includes internet access from the management and workload VPCs. As such, this option is not covered in this analysis.
 
