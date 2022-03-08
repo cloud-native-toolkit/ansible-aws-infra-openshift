@@ -18,22 +18,6 @@
   include_tasks: mgmt-subnets.yaml
   when: (inventory.mgmt.subnets is defined) and (inventory.mgmt.subnets | length == 0)
 
-# Create internet gateway if required
-- name: Create management Internet Gateway
-  include_tasks: mgmt-igw.yaml
-  when: >
-    (inventory.mgmt.igw is defined) and (inventory.mgmt.igw | length == 0)
-
-# Create NAT Gateway if required
-- name: Create management NAT Gateways for public subnets
-  include_tasks: mgmt-ngw.yaml
-  when: (inventory.mgmt.ngw is defined) and (inventory.mgmt.ngw | length == 0)
-
-# Create Route tables if required
-- name: Create management Route Tables
-  include_tasks: mgmt-rtbs.yaml
-  when: (inventory.mgmt.rtbs is defined) and (inventory.mgmt.rtbs | length == 0)
-
 # Create VPC Endpoint for S3 service
 - name: Create VPC Endpoint for S3 service
   include_tasks: mgmt-vpce.yaml

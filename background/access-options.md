@@ -74,6 +74,7 @@ Scenario: Instance is deployed to subnet in VPC.
 
 ## Option 2. VPN connection (Preferred for production)
 
+
 ![VPN Access Architecture Overview](../static/vpn-access.png)
 
 Alternately, additional subnets can be configured with the VPN endpoint to create a multi-AZ architecture as follows.

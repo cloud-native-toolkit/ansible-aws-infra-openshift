@@ -37,12 +37,12 @@
 
     - name: Read inventory template
       include_vars:
-        file: '{{"./inventory.yaml" if(inv_file.stat.exists) else "./templates/prod-inventory.yaml"}}'
+        file: '{{"./inventory.yaml" if(inv_file.stat.exists) else "./templates/advd-inventory.yaml"}}'
 
     - name: Fail if existing inventory is not for production architecture
       fail: 
-        msg: "ERROR: Existing inventory is not for production architecture"
-      when: (arch_type != 'Production')
+        msg: "ERROR: Existing inventory is not for advanced architecture"
+      when: (arch_type != 'Advanced')
 
     - name: Add profile to inventory
       set_fact:
@@ -146,7 +146,7 @@
 
     - include_role:
         name: vpc_networking
-      when: (inventory.pcxs is defined)
+      when: (inventory.tgw is defined)
 
 # Needs to also modify mgmt and wkld VPCs
 # Include RTB across all VPCs

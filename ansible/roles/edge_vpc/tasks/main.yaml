@@ -30,4 +30,4 @@
   include_tasks: edge-ngw.yaml
   when: (inventory.edge.ngw is defined) and (inventory.edge.ngw | length == 0)
 
-# Add security group defaults
+

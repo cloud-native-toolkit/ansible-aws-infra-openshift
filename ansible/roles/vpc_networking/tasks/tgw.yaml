@@ -1,0 +1,180 @@
+---
+
+# Check if transit gateway already exists
+- name: Check if transit gateway already exists
+  community.aws.ec2_transit_gateway_info:
+    profile: "{{inventory.profile}}"
+    region: "{{inventory.region}}"
+    filters:
+      "tag:Name": "{{inventory.resource}}-tgw"
+      "tag:Resource": "{{inventory.resource}}"
+  register: returnedInfo
+
+- name: Parse returned data to determine if transit gateway exists
+  set_fact:
+    tgwExists: "{{True if(returnedInfo.transit_gateways|length > 0) else False}}"
+
+- name: Fail build if more than one transit gateway is returned
+  fail:
+    msg: [
+        "ERROR: Found more than one existing transit gateway with name {{inventory.resource}}-tgw",
+        "Please correct and retry"
+    ]
+  when: returnedInfo.transit_gateways|length > 1
+
+# Create transit gateway if it does not already exist
+- name: Create transit gateway
+  community.aws.ec2_transit_gateway:
+    state: present
+    region: "{{inventory.region}}"
+    description: "{{inventory.resource}}-tgw"
+    auto_attach: no
+    auto_propagate: yes
+    auto_associate: yes
+    dns_support: True
+    wait: yes
+    wait_timeout: 300
+    tags:
+        Name: "{{inventory.resource}}-tgw"
+        Resource: "{{inventory.resource}}"
+  when: not tgwExists
+
+# Update inventory
+- name: Read details of created transit gateway
+  community.aws.ec2_transit_gateway_info:
+    profile: "{{inventory.profile}}"
+    region: "{{inventory.region}}"
+    filters:
+      "tag:Name": "{{inventory.resource}}-tgw"
+      "tag:Resource": "{{inventory.resource}}"
+  register: returnedInfo
+  failed_when: returnedInfo.transit_gateways|length != 1
+
+- name: Update inventory with created transit gateway details
+  set_fact: 
+    inventory: "{{inventory | combine({'tgw':tgwDetails}, recursive=True)}}"
+  vars:
+    tgwDetails:
+        name: "{{returnedInfo.transit_gateways[0].tags.Name}}"
+        id: "{{returnedInfo.transit_gateways[0].transit_gateway_id}}"
+        state: "{{returnedInfo.transit_gateways[0].state}}"
+
+# Create attachment to Edge VPC if is defined
+
+- name: Check if edge VPC attachment exists
+  shell: |
+    set timeout 300
+    {{aws_path}}aws ec2 describe-transit-gateway-vpc-attachments \
+    --filters Name=vpc-id,Values={{inventory.edge.vpc.id}}
+
+    exit 0
+  args:
+    executable: /bin/bash
+  when: (inventory.edge is defined) and (inventory.edge | length > 0)
+  register: returnedInfo
+
+- name: Parse output to determine if attachment exists
+  set_fact: 
+    edgeExists: "{{True if('VpcId' in returnedInfo.stdout_lines[0]) else False}}"
+
+- name: Get list of edge subnets to which to attach gateway
+  set_fact:
+    subnets: "{{inventory | json_query(query) | join(',')}}"
+  vars:
+    query: "edge.subnets[?contains(name,'egress')].id"
+  when: (inventory.edge is defined) and (inventory.edge | length > 0) and (not edgeExists)
+
+- name: Create transit gateway attachment to edge VPC
+  shell: |
+    set timeout 300
+    {{aws_path}}aws ec2 create-transit-gateway-vpc-attachment \
+    --transit-gateway-id {{inventory.tgw.id}} \
+    --vpc-id {{inventory.edge.vpc.id}} \
+    --subnet-ids {{subnets}} \
+    --tag-specifications ResourceType=transit-gateway-attachment,Tags='[{Key=Resource,Value={{inventory.resource}}}]'
+
+    exit 0
+  args:
+    executable: /bin/bash
+  when: (inventory.edge is defined) and (inventory.edge | length > 0) and (not edgeExists)
+  register: returnedInfo
+
+# Create attachment to Management VPC if is defined
+
+- name: Check if management VPC attachment exists
+  shell: |
+    set timeout 300
+    {{aws_path}}aws ec2 describe-transit-gateway-vpc-attachments \
+    --filters Name=vpc-id,Values={{inventory.mgmt.vpc.id}}
+
+    exit 0
+  args:
+    executable: /bin/bash
+  when: (inventory.edge is defined) and (inventory.edge | length > 0)
+  register: returnedInfo
+
+- name: Parse output to determine if attachment exists
+  set_fact: 
+    mgmtExists: "{{True if('VpcId' in returnedInfo.stdout_lines[0]) else False}}"
+
+- name: Get list of management subnets to which to attach gateway
+  set_fact:
+    subnets: "{{inventory | json_query(query) | join(',')}}"
+  vars:
+    query: "mgmt.subnets[*].id"
+  when: (inventory.mgmt is defined) and (inventory.mgmt | length > 0) and (not mgmtExists)  
+
+- name: Create transit gateway attachment to edge VPC
+  shell: |
+    set timeout 300
+    {{aws_path}}aws ec2 create-transit-gateway-vpc-attachment \
+    --transit-gateway-id {{inventory.tgw.id}} \
+    --vpc-id {{inventory.mgmt.vpc.id}} \
+    --subnet-ids {{subnets}} \
+    --tag-specifications ResourceType=transit-gateway-attachment,Tags='[{Key=Resource,Value={{inventory.resource}}}]'
+
+    exit 0
+  args:
+    executable: /bin/bash
+  when: (inventory.mgmt is defined) and (inventory.mgmt | length > 0) and (not mgmtExists)
+  register: returnedInfo
+
+# Create attachment to Workload VPC if is defined
+
+- name: Check if management VPC attachment exists
+  shell: |
+    set timeout 300
+    {{aws_path}}aws ec2 describe-transit-gateway-vpc-attachments \
+    --filters Name=vpc-id,Values={{inventory.wkld.vpc.id}}
+
+    exit 0
+  args:
+    executable: /bin/bash
+  when: (inventory.wkld is defined) and (inventory.wkld | length > 0)
+  register: returnedInfo
+
+- name: Parse output to determine if attachment exists
+  set_fact: 
+    wkldExists: "{{True if('VpcId' in returnedInfo.stdout_lines[0]) else False}}"
+
+- name: Get list of management subnets to which to attach gateway
+  set_fact:
+    subnets: "{{inventory | json_query(query) | join(',')}}"
+  vars:
+    query: "wkld.subnets[*].id"
+  when: (inventory.wkld is defined) and (inventory.wkld | length > 0) and (not wkldExists)  
+
+- name: Create transit gateway attachment to edge VPC
+  shell: |
+    set timeout 300
+    {{aws_path}}aws ec2 create-transit-gateway-vpc-attachment \
+    --transit-gateway-id {{inventory.tgw.id}} \
+    --vpc-id {{inventory.mgmt.vpc.id}} \
+    --subnet-ids {{subnets}} \
+    --tag-specifications ResourceType=transit-gateway-attachment,Tags='[{Key=Resource,Value={{inventory.resource}}}]'
+
+    exit 0
+  args:
+    executable: /bin/bash
+  when: (inventory.wkld is defined) and (inventory.wkld | length > 0) and (not wkldExists)
+  register: returnedInfo

@@ -1,0 +1,55 @@
+---
+
+- name: Query client VPN endpoint authorization rules
+  shell: |
+    set timeout 300
+
+    {{aws_path}}aws ec2 describe-client-vpn-authorization-rules \
+    --client-vpn-endpoint-id {{cvpnId}}
+
+    exit 0
+  args:
+    executable: /bin/bash
+  delegate_to: localhost
+  register: response
+  failed_when: response.stderr_lines | length > 0
+
+- name: Set fact from response
+  set_fact:
+    cvpn_details: "{{response.stdout | from_json}}"
+
+- name: Create list of existing rules
+  set_fact:
+    existingRules: "{{existingRules | default([]) + [item.DestinationCidr]}}"
+  loop: "{{cvpn_details.AuthorizationRules}}"
+  loop_control:
+    label: "{{item.DestinationCidr}}"
+
+- name: reate list of required rules
+  set_fact:
+    ruleList: "{{ruleList | default([]) + [{'cidr':item,'reqd':reqd}]}}"
+  vars:
+    reqd: "{{False if(item in (existingRules | join(','))) else True}}"
+  loop: "{{cidrList}}"
+  loop_control:
+    label: "{{item}}"
+
+- name: Authorize client VPN ingress
+  shell: |
+    set timeout 300
+
+    {{aws_path}}aws ec2 authorize-client-vpn-ingress \
+    --client-vpn-endpoint-id {{cvpnId}} \
+    --target-network-cidr {{item.cidr}} \
+    --authorize-all-groups
+
+    exit 0
+  args:
+    executable: /bin/bash
+  delegate_to: localhost
+  register: response
+  failed_when: response.stderr_lines | length > 0
+  loop: "{{ruleList}}"
+  loop_control:
+    label: "{{item.cidr}}"
+  when: item.reqd

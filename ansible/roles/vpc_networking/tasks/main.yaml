@@ -1,16 +1,19 @@
 ---
 
-# Create the Peer to peer VPC connections
-- name: Create the peer to peer VPC connections
-  include_tasks: pcxs.yaml
-  when: (inventory.pcxs is defined)
+# Create the transit gateway
+- name: Create the transit gateway
+  include_tasks: tgw.yaml
+  when: (inventory.tgw is defined) and (inventory.tgw | length == 0)
+
+# Create transit gateway attachment to edge VPC
+
+# Create transit gateway attachement to mgmt VPC
+
+# Create transit gateway attachment to wkld VPC
 
 # Create edge VPC route tables
-- name: Create the edge VPC route tables and assign to subnets
-  include_tasks: edge-rtbs.yaml
-  when: (inventory.edge.rtbs is defined)
+
+# Create mgmt VPC route tables
+
+# Create wkld VPC route tables
   
-# Create management VPC route tables
-# Create workload VPC route tables
-# Create management VPC Endpoint
-# Create workload VPC Endpoint

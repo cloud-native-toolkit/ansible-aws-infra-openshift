@@ -22,7 +22,7 @@
   register: returnedInfo_region
   when: not defaultRegion
 
-- name: Create AWS Internet Gateway with default region
+- name: Create AWS NAT Gateway with default region
   amazon.aws.ec2_vpc_nat_gateway:
     subnet_id: "{{subnetId}}"
     profile: "{{usrProfile}}"

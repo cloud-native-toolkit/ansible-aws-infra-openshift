@@ -1,0 +1,4 @@
+# Path to executables on local host
+aws_path: "/usr/local/bin/"
+rosa_path: "/usr/local/bin/"
+aws_config_path: "~/.aws/"

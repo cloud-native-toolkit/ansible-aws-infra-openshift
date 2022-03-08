@@ -1,0 +1,98 @@
+---
+
+# Add a client VPN endpoint to an existing VPC
+# Requires the AWS config be set to the region of the existing VPC
+
+- name: Create a client VPN endpoint
+  hosts: localhost
+
+
+  vars:
+    server_cert: arn:aws:acm:ap-southeast-2:000000000000:certificate/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee
+    client_cert: arn:aws:acm:ap-southeast-2:000000000000:certificate/ffffffff-cccc-eeee-0000-aaaaaaaaaaaa
+    client_cidr: 10.100.0.0/18
+
+    # Uncomment and modify the below to overwrite an existing inventory file (which will use the edge VPC)
+    #
+    #local_name: "recloud-cvpn"
+    #resource_group: "recloud"
+    #vpc_id: vpc-456789123
+    #subnet_list:
+    #  - subnet-123456789
+    #  - subnet-987654321
+    #  - subnet-765438976
+    #authorized_cidrs:
+    #- 10.0.0.0/16
+    #- 10.1.0.0/16
+
+  tasks:
+
+    - name: Get the current time
+      command: date
+      register: dateResponse
+
+    - name: Record current date
+      set_fact:
+        start_time: '{{dateResponse.stdout_lines[0]}}'
+
+    - name: Check if inventory file exists
+      stat:
+        path: ./inventory.yaml
+      register: inv_file
+
+    - name: Read inventory template
+      include_vars:
+        file: '{{"./inventory.yaml" if(inv_file.stat.exists) else "./templates/std-inventory.yaml"}}'
+
+    - name: Build name if using existing inventory
+      set_fact:
+        edge_name: "{{inventory.resource}}-edge-cvpn"
+      when: (name is not defined) and (inventory.resource is defined)
+
+    - name: Build list of CIDRs to authorize if using existing inventory - edge
+      set_fact:
+        cidr_list: "{{cidr_list | default([]) + [inventory.edge.vpc.cidr]}}"
+      when: (authorized_cidrs is not defined) and (inventory.edge.vpc.cidr is defined)
+
+    - name: Build list of CIDRs to authorize if using existing inventory - management
+      set_fact:
+        cidr_list: "{{cidr_list | default([]) + [inventory.mgmt.vpc.cidr]}}"
+      when: (authorized_cidrs is not defined) and (inventory.mgmt.vpc.cidr is defined)
+
+    - name: Build list of CIDRs to authorize if using existing inventory - workload
+      set_fact:
+        cidr_list: "{{cidr_list | default([]) + [inventory.wkld.vpc.cidr]}}"
+      when: (authorized_cidrs is not defined) and (inventory.wkld.vpc.cidr is defined)
+    
+    - name: Fail if no CIDR in existing inventory or provided
+      fail:
+        msg: "ERROR: Please provide a list of CIDRs to authorize or ensure they exist in inventory.yaml file"
+      when: (authorized_cidrs is not defined) and (cidr_list is not defined)
+
+    - include_role:
+        name: create_cvpn
+      vars:
+        vpcId: "{{vpc_id if(vpc_id is defined) else inventory.edge.vpc.id}}"
+        serverCert: "{{server_cert}}"
+        clientCert: "{{client_cert}}"
+        clientCIDR: "{{client_cidr}}"
+        cvpn_name: "{{local_name if(local_name is defined) else edge_name}}"
+        resource: "{{resource_group if(resource_group is defined) else inventory.resource}}"
+        cidrList: "{{authorized_cidrs if(authorized_cidrs is defined) else cidr_list}}"
+        subnetList: "{{subnet_list if(subnet_list is defined) else inventory.edge.subnets | json_query(query)}}"
+        query: "[?name.contains(@,'egress')].id"
+
+    - name: Get current time
+      command: date
+      register: dateResponse
+
+    - name: Record current time
+      set_fact:
+        end_time: '{{dateResponse.stdout_lines[0]}}'
+
+    - debug:
+        msg: [
+            "Start time was {{start_time}}",
+            "End time was {{end_time}}"
+        ]
+

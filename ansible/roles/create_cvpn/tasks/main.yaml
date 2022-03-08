@@ -1,0 +1,17 @@
+---
+
+# Create Client VPN Endpoint
+- name: Create client VPN endpoint if it does not already exist
+  include_tasks: create-cvpn.yaml
+
+# Create association
+- name: Create client VPN endpoint association
+  include_tasks: create-association.yaml
+
+# Authorise VPN Access
+- name: Authorize client VPN ingress
+  include_tasks: authorize-client-vpn.yaml
+
+# Create VPN route to private VPCs if provided
+- name: Create client VPN route to other VPCs
+  include_tasks: create-cvpn-routes.yaml

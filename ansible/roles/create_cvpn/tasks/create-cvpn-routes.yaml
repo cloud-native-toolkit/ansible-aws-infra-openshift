@@ -1,0 +1,62 @@
+---
+
+- name: Query for existing routes
+  shell: |
+    set timeout 300
+
+    {{aws_path}}aws ec2 describe-client-vpn-routes \
+    --client-vpn-endpoint-id {{cvpnId}}
+
+    exit 0
+  args:
+    executable: /bin/bash
+  delegate_to: localhost
+  register: response
+  failed_when: response.stderr_lines | length > 0
+
+- name: Set fact from response
+  set_fact:
+    cvpn_details: "{{response.stdout | from_json}}"
+
+- name: Create list of existing routes
+  set_fact:
+    existingRoutes: "{{existingRoutes | default([]) + [item.DestinationCidr]}}"
+  loop: "{{cvpn_details.Routes}}"
+  loop_control:
+    label: "{{item.DestinationCidr}}"
+
+- name: Create list of required routes
+  set_fact:
+    route_list: "{{route_list | default([]) + [{'cidr':item,'reqd':reqd}]}}"
+  vars:
+    reqd: "{{False if(item in (existingRoutes | join(','))) else True}}"
+  loop: "{{cidrList}}"
+  loop_control:
+    label: "{{item}}"
+
+- name: Merge subnet ids to list of requied routes
+  set_fact:
+    routeList: "{{routeList | default([]) +[{'cidr':item[0].cidr,'reqd':item[0].reqd,'subnet_id':item[1]}]}}"
+  with_nested:
+    - "{{route_list}}"
+    - "{{subnetList}}"
+
+- name: Create missing routes
+  shell: |
+    set timeout 300
+
+    {{aws_path}}aws ec2 create-client-vpn-route \
+    --client-vpn-endpoint-id {{cvpnId}} \
+    --destination-cidr-block {{item.cidr}} \
+    --target-vpc-subnet-id {{item.subnet_id}}
+
+    exit 0
+  args:
+    executable: /bin/bash
+  delegate_to: localhost
+  register: response
+  failed_when: response.stderr_lines | length > 0
+  loop: "{{routeList}}"
+  loop_control:
+    label: "{{item.cidr}}"
+  when: item.reqd

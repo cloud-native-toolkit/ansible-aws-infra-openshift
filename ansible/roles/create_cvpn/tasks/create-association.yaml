@@ -1,0 +1,73 @@
+---
+
+# Get current client VPN endpoint details
+- name: Query AWS for Client VPN details
+  shell: |
+    set timeout 300
+
+    {{aws_path}}aws ec2 describe-client-vpn-endpoints
+
+    exit 0
+  args:
+    executable: /bin/bash
+  delegate_to: localhost
+  register: response
+  failed_when: response.stderr_lines | length > 0
+
+- name: Set fact from response
+  set_fact:
+    cvpnDetails: "{{response.stdout | from_json}}"
+    cvpn_id_list: []
+
+- name: Parse response for VPN endpoints in requested VPC
+  set_fact:
+    cvpn_id_list: "{{cvpn_id_list | default([]) + [item.ClientVpnEndpointId]}}"
+    cvpn_status: "{{item.Status.Code}}"
+  loop: "{{cvpnDetails.ClientVpnEndpoints}}"
+  loop_control:
+    label: "{{item.ClientVpnEndpointId}}"
+  when: item.VpcId == vpcId
+
+- name: Fail if no VPN endpoints found
+  fail:
+    msg: [
+      "ERROR: No Client VPN endpoint found for VPC {{vpcId}}.",
+      "Please correct and retry"
+    ]
+  when: cvpn_id_list | length == 0
+
+- name: Fail if more than one Client VPN Endpoint in VPC
+  fail:
+    msg: [
+      "ERROR: This architecture only supports a single client VPN endpoint. Multiple endpoints found.",
+      "Please correct and retry"
+    ]
+  when: cvpn_id_list | length > 1
+
+- name: Set client VPN endpoint id fact
+  set_fact:
+    cvpnId: "{{cvpn_id_list[0]}}"
+
+- name: Fail if no subnet id or list is provided
+  fail:
+    msg: "ERROR: No subnetList provided"
+  when: >
+    (subnetList is not defined) or
+    (subnetList | length == 0)
+
+- name: Create Client VPN network association
+  shell: |
+    set timeout 300
+
+    {{aws_path}}aws ec2 associate-client-vpn-target-network \
+    --client-vpn-endpoint-id {{cvpnId}} \
+    --subnet-id {{item}}
+
+    exit 0
+  args: 
+    executable: /bin/bash
+  delegate_to: localhost
+  register: response
+  failed_when: response.stderr_lines | length > 0
+  loop: "{{subnetList}}"
+  when: cvpn_status == 'pending-associate'

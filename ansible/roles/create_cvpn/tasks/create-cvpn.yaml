@@ -1,0 +1,59 @@
+---
+
+- name: Query AWS for Client VPN details
+  shell: |
+    set timeout 300
+
+    {{aws_path}}aws ec2 describe-client-vpn-endpoints
+
+    exit 0
+  args:
+    executable: /bin/bash
+  delegate_to: localhost
+  register: response
+  failed_when: response.stderr_lines| length > 0
+
+- name: Set fact from response
+  set_fact:
+    cvpnDetails: "{{response.stdout | from_json}}"
+    cvpn_id_list: []
+
+- name: Parse response for VPN endpoints in requested VPC
+  set_fact:
+    cvpn_id_list: "{{cvpn_id_list | default([]) + [item.ClientVpnEndpointId]}}"
+  loop: "{{cvpnDetails.ClientVpnEndpoints}}"
+  loop_control:
+    label: "{{item.ClientVpnEndpointId}}"
+  when: item.VpcId == vpcId
+
+- name: Fail if more than one Client VPN Endpoint in VPC
+  fail:
+    msg: [
+      "ERROR: This architecture only supports a single client VPN endpoint. Multiple endpoints found in {{vpcId}}.",
+      "Please correct and retry"
+    ]
+  when: cvpn_id_list | length > 1
+
+- name: Set existence of client VPN Endpoint
+  set_fact:
+    cvpnExists: "{{True if(cvpn_id_list | length > 0) else False}}"
+
+- name: Create Client VPN Endpoint
+  shell: |
+    set timeout 300
+
+    {{aws_path}}aws ec2 create-client-vpn-endpoint \
+    --client-cidr-block {{clientCIDR}} \
+    --server-certificate-arn {{server_cert}} \
+    --authentication-options Type=certificate-authentication,MutualAuthentication={ClientRootCertificateChainArn={{client_cert}}} \
+    --connection-log-options Enabled=false \
+    --vpc-id {{vpcId}} \
+    --tag-specifications ResourceType=client-vpn-endpoint,Tags='[{Key=Name,Value="recloud-cvpn"},{Key=Resource,Value="recloud"}]'
+
+    exit 0
+  args:
+    executable: /bin/bash
+  delegate_to: localhost
+  when: not cvpnExists
+  register: response
+  failed_when: response.stderr_lines| length > 0

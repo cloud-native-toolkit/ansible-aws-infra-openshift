@@ -2,3 +2,4 @@
 .DS_Store
 ansible/test.yaml
 ansible/temp.json
+ansible/inventory.yaml
