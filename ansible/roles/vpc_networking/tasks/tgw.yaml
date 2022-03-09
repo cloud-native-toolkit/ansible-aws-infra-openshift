@@ -75,7 +75,7 @@
 
 - name: Parse output to determine if attachment exists
   set_fact: 
-    edgeExists: "{{True if('VpcId' in returnedInfo.stdout_lines[0]) else False}}"
+    edgeExists: "{{True if(inventory.edge.vpc.id in returnedInfo.stdout) else False}}"
 
 - name: Get list of edge subnets to which to attach gateway
   set_fact:
@@ -98,6 +98,7 @@
     executable: /bin/bash
   when: (inventory.edge is defined) and (inventory.edge | length > 0) and (not edgeExists)
   register: returnedInfo
+  failed_when: returnedInfo.stderr_lines | length > 0
 
 # Create attachment to Management VPC if is defined
 
@@ -110,12 +111,12 @@
     exit 0
   args:
     executable: /bin/bash
-  when: (inventory.edge is defined) and (inventory.edge | length > 0)
+  when: (inventory.mgmt is defined) and (inventory.mgmt | length > 0)
   register: returnedInfo
 
 - name: Parse output to determine if attachment exists
   set_fact: 
-    mgmtExists: "{{True if('VpcId' in returnedInfo.stdout_lines[0]) else False}}"
+    mgmtExists: "{{True if(inventory.mgmt.vpc.id in returnedInfo.stdout) else False}}"
 
 - name: Get list of management subnets to which to attach gateway
   set_fact:
@@ -124,7 +125,7 @@
     query: "mgmt.subnets[*].id"
   when: (inventory.mgmt is defined) and (inventory.mgmt | length > 0) and (not mgmtExists)  
 
-- name: Create transit gateway attachment to edge VPC
+- name: Create transit gateway attachment to management VPC
   shell: |
     set timeout 300
     {{aws_path}}aws ec2 create-transit-gateway-vpc-attachment \
@@ -138,10 +139,11 @@
     executable: /bin/bash
   when: (inventory.mgmt is defined) and (inventory.mgmt | length > 0) and (not mgmtExists)
   register: returnedInfo
+  failed_when: returnedInfo.stderr_lines | length > 0
 
 # Create attachment to Workload VPC if is defined
 
-- name: Check if management VPC attachment exists
+- name: Check if workload VPC attachment exists
   shell: |
     set timeout 300
     {{aws_path}}aws ec2 describe-transit-gateway-vpc-attachments \
@@ -155,7 +157,8 @@
 
 - name: Parse output to determine if attachment exists
   set_fact: 
-    wkldExists: "{{True if('VpcId' in returnedInfo.stdout_lines[0]) else False}}"
+    wkldExists: "{{True if(inventory.wkld.vpc.id in returnedInfo) else False}}"
+  when: (inventory.wkld is defined) and (inventory.wkld | length > 0)  
 
 - name: Get list of management subnets to which to attach gateway
   set_fact:
@@ -177,4 +180,5 @@
   args:
     executable: /bin/bash
   when: (inventory.wkld is defined) and (inventory.wkld | length > 0) and (not wkldExists)
+  failed_when: returnedInfo.stderr_lines | length > 0
   register: returnedInfo
