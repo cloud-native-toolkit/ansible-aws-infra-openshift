@@ -163,8 +163,6 @@
         name: workload_rosa
       when: (inventory.wkld.rosa is defined) and (inventory.wkld.rosa | length == 0)  
 
-# Add task to add NACL to clusters
-
     - name: Get the current time
       command: date
       register: dateResponse

@@ -12,12 +12,41 @@ The module depends upon the following software components being installed on the
 - AWS CLI version 2.4.11 or higher (follow the guide [here](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-welcome.html))
 - ROSA CLI version 1.1.7 or higher (follow the guide [here](https://docs.openshift.com/rosa/rosa_getting_started/rosa-installing-rosa.html))
 
-## Module Dependences
+### Module Dependences
 
 This module makes use of the following Ansible modules.
 
 - amazon.aws
 - amazon.community.aws
+
+### Subscription Dependencies
+
+- AWS administrative access
+- Red Hat OpenShift subscription access enabled on AWS
+
+## Bill of Materials
+
+This architecture consists of the following bill of materials:
+
+| Item | Description |
+|------------------ | ------------------------------------------------------------------------------- |
+| VPC | Provides for ingress and egress for the environment to and from the internet.  |
+| Public Subnets | Provides network interface for devices such as VPN endpoints and NAT gateways. One subnet per availability zone. |
+| Private Subnets | Provide attachment for OpenShift cluster nodes. One subnet per avialability zone. |
+| EC2 Subnets | Private subnets providing attachment of EC2 instances. |
+| Internet Gateway (IGW) | Provides the interface to the internet for the VPC. |
+| NAT Gateway (NGW) | Provide masquerading of IP addresses on egress to the internet. One per availability zone. |
+| Elastic IP | A public IP address allocated at the time of NAT Gateway provisioning. These are the public IP addresses of the NAT Gateways. |
+| Route Tables | Route tables are applied to each subnet to route network traffic correctly |
+| Security Groups | Provide firewall rules on each network port of the OpenShift cluster, including load balancers. |
+| Network ACL | Controls what network services are allowed to access the public, private and EC2 subnets. |
+| ROSA Cluster | A managed OpenShift cluster that is deployed into the VPC. |
+| Classic Load Balancer | Provides access from the internet to deployed workloads on the OpenShift cluster. |
+| Network Load Balancer (external) | Provides access from the internet to the OpenShift console. |
+| Network Load Balancer (internal) | Provides access from the private subnet to the OpenShift API. Primarily utilized by OpenShift nodes for cluster operability. |
+| VPC Endpoint | Provides a gateway to AWS services such as S3 storage. |
+| Client VPN Endpoint | Optional add-on to provision a Client VPN Endpoint providing individual client access to the environment. |
+
 
 ## Example usage
 
@@ -199,4 +228,4 @@ When complete, the automation will output the discovered and/or created resource
 
 The above inventory can be shown in the following diagram.
 
-![Standard AWS OpenShift Architecture](../static/std-arch.png)
+![Standard AWS OpenShift Architecture](./static/std-arch.png)

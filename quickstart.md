@@ -24,6 +24,26 @@ This module makes use of the following Ansible modules.
 - AWS administrative access
 - Red Hat OpenShift subscription access enabled on AWS
 
+## Bill of Materials
+
+This architecture consists of the following bill of materials:
+
+| Item | Description |
+|------------------ | ------------------------------------------------------------------------------- |
+| VPC | Provides for ingress and egress for the environment to and from the internet.  |
+| Public Subnets | Provides network interface for devices such as VPN endpoints and NAT gateways.  |
+| Private Subnets | Provide attachment for OpenShift cluster nodes.  |
+| Internet Gateway (IGW) | Provides the interface to the internet for the VPC. |
+| NAT Gateway (NGW) | Provide masquerading of IP addresses on egress to the internet.  |
+| Elastic IP | A public IP address allocated at the time of NAT Gateway provisioning. This is the public IP address of the NAT Gateway. |
+| Route Tables | Route tables are applied to each subnet to route network traffic correctly |
+| Security Groups | Provide firewall rules on each network port of the OpenShift cluster, including load balancers. |
+| ROSA Cluster | A managed OpenShift cluster that is deployed into the VPC. |
+| Classic Load Balancer | Provides access from the internet to deployed workloads on the OpenShift cluster. |
+| Network Load Balancer (external) | Provides access from the internet to the OpenShift console. |
+| Network Load Balancer (internal) | Provides access from the private subnet to the OpenShift API. Primarily utilized by OpenShift nodes for cluster operability. |
+| Client VPN Endpoint | Optional add-on to provision a Client VPN Endpoint providing individual client access to the environment. |
+
 ## Example usage
 
 1. Clone this repository
@@ -111,4 +131,4 @@ When complete, the automation will output the discovered and/or created resource
 
 The above inventory can be shown in the following diagram.
 
-![Quickstart AWS OpenShift Architecture](../static/qs-arch.png)
+![Quickstart AWS OpenShift Architecture](./static/qs-arch.png)

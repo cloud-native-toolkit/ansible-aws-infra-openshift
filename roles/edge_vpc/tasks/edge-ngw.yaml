@@ -3,11 +3,12 @@
 ###
 # Create NAT Gateways for egress subnets
 
+# NAT Gateway is deployed onto the ingress (public) subnets
 - name: Generate list of NAT gateways to create
   set_fact:
     natGWDict: "{{natGWDict | default([]) + [{'name':item.name+'-ngw','subnet_id':item.id}] }}"
     newNATGWList: []    # Create empty list for next step
-  when: '"egress" in item.name'
+  when: '"ingress" in item.name'
   loop: "{{inventory.edge.subnets}}"
 
 - name: Query AWS for existance of NAT gateways
