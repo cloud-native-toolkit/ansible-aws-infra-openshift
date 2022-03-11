@@ -7,33 +7,23 @@
     subnetDict: []
 
 # Create a dictionary of subnets to create and add an Exists flag set to false initially (will be updated when AWS queried)
-- name: Create dictionary of ingress subnets to be created
+- name: Create dictionary of public subnets to be created
   set_fact:
     subnetDict: "{{ subnetDict + [{ 'name': name, 'cidr': item, 'az': az }] }}"
   vars:
-    name: "{{inventory.resource}}-{{inventory.edge.identifier}}-ingress-subnet-{{idx|string}}"
+    name: "{{inventory.resource}}-{{inventory.edge.identifier}}-public-subnet-{{idx|string}}"
     az: "{{inventory.availability_zones[idx]}}"
-  loop: "{{inventory.edge.cidrs.ingress.subnets}}"
+  loop: "{{inventory.edge.cidrs.public.subnets}}"
   loop_control:
     index_var: idx
 
-- name: Add bastion subnets to dictionary
+- name: Add private subnets to dictionary
   set_fact:
     subnetDict: "{{ subnetDict + [{ 'name': name, 'cidr': item, 'az': az }] }}"
   vars:
-    name: "{{inventory.resource}}-{{inventory.edge.identifier}}-bastion-subnet-{{idx|string}}"
+    name: "{{inventory.resource}}-{{inventory.edge.identifier}}-private-subnet-{{idx|string}}"
     az: "{{inventory.availability_zones[idx]}}"
-  loop: "{{inventory.edge.cidrs.bastion.subnets}}"
-  loop_control:
-    index_var: idx
-
-- name: Add egress subnets to dictionary
-  set_fact:
-    subnetDict: "{{ subnetDict + [{ 'name': name, 'cidr': item, 'az': az }] }}"
-  vars:
-    name: "{{inventory.resource}}-{{inventory.edge.identifier}}-egress-subnet-{{idx|string}}"
-    az: "{{inventory.availability_zones[idx]}}"
-  loop: "{{inventory.edge.cidrs.egress.subnets}}"
+  loop: "{{inventory.edge.cidrs.private.subnets}}"
   loop_control:
     index_var: idx
 

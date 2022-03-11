@@ -1,35 +1,22 @@
 ---
 
 # Create CIDR info if required
-- name: Determine management CIDR requirements
+- name: Determine workload CIDR requirements
   include_tasks: wkld-cidr.yaml
-  when: (inventory.wkld.cidrs | length == 0)
+  when: >
+    (inventory.wkld.cidrs is defined) and
+    ((inventory.wkld.cidrs.private is not defined) or
+    (inventory.wkld.cidrs.public is not defined))
 
 # Create VPC if required
-- name: Build Management VPC if not already present
+- name: Build Workload VPC if not already present
   include_tasks: wkld-vpc.yaml
   when: (inventory.wkld.vpc is defined) and (inventory.wkld.vpc | length == 0)
 
 # Create subnets if required
-- name: Create management public subnets
+- name: Create workload public subnets
   include_tasks: wkld-subnets.yaml
   when: (inventory.wkld.subnets is defined) and (inventory.wkld.subnets | length == 0)
-
-# Create internet gateway if required
-- name: Create management Internet Gateway
-  include_tasks: wkld-igw.yaml
-  when: >
-    (inventory.wkld.igw is defined) and (inventory.wkld.igw | length == 0)
-
-# Create NAT Gateway if required
-- name: Create management NAT Gateways for public subnets
-  include_tasks: wkld-ngw.yaml
-  when: (inventory.wkld.ngw is defined) and (inventory.wkld.ngw | length == 0)
-
-# Create Route tables if required
-- name: Create management Route Tables
-  include_tasks: wkld-rtbs.yaml
-  when: (inventory.wkld.rtbs is defined) and (inventory.wkld.rtbs | length == 0)
 
 # Create VPC Endpoint for S3 service
 - name: Create VPC Endpoint for S3 service

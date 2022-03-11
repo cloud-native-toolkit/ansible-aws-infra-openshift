@@ -18,6 +18,11 @@
   set_fact:
     cvpn_details: "{{response.stdout | from_json}}"
 
+- name: Set fact if no existing authorization rules
+  set_fact:
+    existingRules: []
+  when: cvpn_details.AuthorizationRules | length == 0
+
 - name: Create list of existing rules
   set_fact:
     existingRules: "{{existingRules | default([]) + [item.DestinationCidr]}}"
@@ -25,7 +30,7 @@
   loop_control:
     label: "{{item.DestinationCidr}}"
 
-- name: reate list of required rules
+- name: Create list of required rules
   set_fact:
     ruleList: "{{ruleList | default([]) + [{'cidr':item,'reqd':reqd}]}}"
   vars:

@@ -8,8 +8,10 @@
   vars:
     profile: "{{inventory.profile}}"
     region: "{{inventory.region}}"
+  when: (inventory.rosa_validation.access is not defined) or (inventory.rosa_validation.access != 'pass')
 
 - name: Verify account roles
   include_tasks: validate-roles.yaml
+  when: (inventory.rosa_validation.roles is not defined) or (inventory.rosa_validation.roles != 'pass')
 
 # To do - add validation of quota and permissions

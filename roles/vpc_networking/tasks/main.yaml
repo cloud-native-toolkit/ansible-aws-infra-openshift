@@ -1,19 +1,27 @@
 ---
 
-# Create the transit gateway
+# Create the transit gateway and attachments
 - name: Create the transit gateway
   include_tasks: tgw.yaml
   when: (inventory.tgw is defined) and (inventory.tgw | length == 0)
 
-# Create transit gateway attachment to edge VPC
-
-# Create transit gateway attachement to mgmt VPC
-
-# Create transit gateway attachment to wkld VPC
+# Modify transit gateway route table
+- name: Add static route to transit gateway route table
+  include_tasks: tgw-rtb.yaml
+  when: (inventory.tgw is defined) and (inventory.tgw.routes is not defined)
 
 # Create edge VPC route tables
+- name: Create route tables for edge VPC subnets
+  include_tasks: edge-rtbs.yaml
+  when: (inventory.edge.rtbs is defined) and (inventory.edge.rtbs | length == 0)
 
 # Create mgmt VPC route tables
+- name: Create route tables for management VPC subnets
+  include_tasks: mgmt-rtbs.yaml
+  when: (inventory.mgmt.rtbs is defined) and (inventory.mgmt.rtbs | length == 0)
 
 # Create wkld VPC route tables
+- name: Create route tables for workload VPC subnets
+  include_tasks: wkld-rtbs.yaml
+  when: (inventory.wkld.rtbs is defined) and (inventory.wkld.rtbs | length == 0)
   

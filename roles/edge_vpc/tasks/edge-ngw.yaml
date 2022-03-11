@@ -3,18 +3,18 @@
 ###
 # Create NAT Gateways for egress subnets
 
-# NAT Gateway is deployed onto the ingress (public) subnets
+# NAT Gateway is deployed onto the public subnets
 - name: Generate list of NAT gateways to create
   set_fact:
     natGWDict: "{{natGWDict | default([]) + [{'name':item.name+'-ngw','subnet_id':item.id}] }}"
     newNATGWList: []    # Create empty list for next step
-  when: '"ingress" in item.name'
+  when: '"public" in item.name'
   loop: "{{inventory.edge.subnets}}"
 
 - name: Query AWS for existance of NAT gateways
   amazon.aws.ec2_vpc_nat_gateway_info:
-    region: "{{awsRegion}}"
-    profile: "{{awsProfile}}"
+    region: "{{inventory.region}}"
+    profile: "{{inventory.profile}}"
     filters:
       subnet-id: "{{item.subnet_id}}"
   loop: "{{natGWDict}}"
@@ -46,10 +46,10 @@
     name: create_nat_gw
   vars:
     subnetId: "{{item.subnet_id}}"
-    region: "{{awsRegion}}"
-    profile: "{{awsProfile}}"
+    region: "{{inventory.region}}"
+    profile: "{{inventory.profile}}"
     ngwName: "{{item.name}}"
-    envName: "{{resourceGroup|lower}}"
+    envName: "{{inventory.resource}}"
     wait_for_complete: True
   when: not item.exists
   loop: "{{ natGWDict }}"
@@ -58,8 +58,8 @@
 
 - name: Query AWS for NAT gateway details
   amazon.aws.ec2_vpc_nat_gateway_info:
-    region: "{{awsRegion}}"
-    profile: "{{awsProfile}}"
+    region: "{{inventory.region}}"
+    profile: "{{inventory.profile}}"
     filters:
       subnet-id: "{{item.subnet_id}}"
   loop: "{{natGWDict}}"

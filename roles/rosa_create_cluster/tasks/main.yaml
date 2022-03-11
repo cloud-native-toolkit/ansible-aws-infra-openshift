@@ -61,22 +61,32 @@
 - name: Kick off multi-availability zone cluster creation in new VPC
   include_tasks:
     file: new-multi-az.yaml
-  when: (new_vpc) and (multi_az) and (not cluster_exists)
+  when: (new_vpc) and (multi_az) and (not cluster_exists) and (not privatelink)
 
 - name: Kick off single availability zone cluster creation in new VPC
   include_tasks:
     file: new-single-az.yaml
-  when: (new_vpc) and (not multi_az) and (not cluster_exists)
+  when: (new_vpc) and (not multi_az) and (not cluster_exists) and (not privatelink)
 
 - name: Kick off multi-availability zone cluster creation in existing VPC
   include_tasks:
     file: multi-az.yaml
-  when: (not new_vpc) and (multi_az) and (not cluster_exists)
+  when: (not new_vpc) and (multi_az) and (not cluster_exists) and (not privatelink)
 
 - name: Kick off single availability zone cluster creation in existing VPC
   include_tasks:
     file: single-az.yaml
-  when: (not new_vpc) and (not multi_az) and (not cluster_exists)
+  when: (not new_vpc) and (not multi_az) and (not cluster_exists) and (not privatelink)
+
+- name: Kick off multi-availability zone cluster creation in existing VPC with PrivateLink
+  include_tasks:
+    file: pl-multi-az.yaml
+  when: (not new_vpc) and (multi_az) and (not cluster_exists) and (privatelink)
+
+- name: Kick off single availability zone cluster creation in existing VPC with PrivateLink
+  include_tasks:
+    file: pl-single-az.yaml
+  when: (not new_vpc) and (not multi_az) and (not cluster_exists) and (privatelink)
 
 - name: Create management roles
   include_tasks:

@@ -71,17 +71,33 @@
   args:
     executable: /bin/bash
   when: (inventory.edge is defined) and (inventory.edge | length > 0)
+  failed_when: returnedInfo.stderr | length > 0
   register: returnedInfo
 
-- name: Parse output to determine if attachment exists
+- name: Parse output into a dict
   set_fact: 
-    edgeExists: "{{True if(inventory.edge.vpc.id in returnedInfo.stdout) else False}}"
+    edgeDetails: "{{returnedInfo.stdout | from_json}}"
+  when: (inventory.edge is defined) and (inventory.edge | length > 0)
+
+- name: Set fact if attachment already exists
+  set_fact:
+    edgeExists: "{{True if(edgeDetails.TransitGatewayVpcAttachments | length > 0) else False}}"
+  when: (inventory.edge is defined) and (inventory.edge | length > 0)
+
+- name: Parse attachment information if it already exists
+  set_fact:
+    inventory: "{{inventory | combine({'tgw':{'edge':attachDetails}}, recursive=True)}}"
+  vars:
+    attachDetails:
+      id: "{{edgeDetails.TransitGatewayVpcAttachments[0].TransitGatewayAttachmentId}}"
+      subnet_ids: "{{edgeDetails.TransitGatewayVpcAttachments[0].SubnetIds}}"
+  when: edgeExists and ((inventory.edge is defined) and (inventory.edge | length > 0))
 
 - name: Get list of edge subnets to which to attach gateway
   set_fact:
     subnets: "{{inventory | json_query(query) | join(',')}}"
   vars:
-    query: "edge.subnets[?contains(name,'egress')].id"
+    query: "edge.subnets[?contains(name,'private')].id"
   when: (inventory.edge is defined) and (inventory.edge | length > 0) and (not edgeExists)
 
 - name: Create transit gateway attachment to edge VPC
@@ -113,10 +129,26 @@
     executable: /bin/bash
   when: (inventory.mgmt is defined) and (inventory.mgmt | length > 0)
   register: returnedInfo
+  failed_when: returnedInfo.stderr | length > 0
 
-- name: Parse output to determine if attachment exists
+- name: Parse output into a dict
   set_fact: 
-    mgmtExists: "{{True if(inventory.mgmt.vpc.id in returnedInfo.stdout) else False}}"
+    mgmtDetails: "{{returnedInfo.stdout | from_json}}"
+  when: (inventory.mgmt is defined) and (inventory.mgmt | length > 0)
+
+- name: Set fact if attachment already exists
+  set_fact:
+    mgmtExists: "{{True if(mgmtDetails.TransitGatewayVpcAttachments | length > 0) else False}}"
+  when: (inventory.mgmt is defined) and (inventory.mgmt | length > 0)
+
+- name: Parse attachment information if it already exists
+  set_fact:
+    inventory: "{{inventory | combine({'tgw':{'mgmt':attachDetails}}, recursive=True)}}"
+  vars:
+    attachDetails:
+      id: "{{mgmtDetails.TransitGatewayVpcAttachments[0].TransitGatewayAttachmentId}}"
+      subnet_ids: "{{mgmtDetails.TransitGatewayVpcAttachments[0].SubnetIds}}"
+  when: mgmtExists and (inventory.mgmt is defined) and (inventory.mgmt | length > 0)
 
 - name: Get list of management subnets to which to attach gateway
   set_fact:
@@ -154,25 +186,40 @@
     executable: /bin/bash
   when: (inventory.wkld is defined) and (inventory.wkld | length > 0)
   register: returnedInfo
+  failed_when: returnedInfo.stderr | length > 0
 
-- name: Parse output to determine if attachment exists
+- name: Parse output into fact
   set_fact: 
-    wkldExists: "{{True if(inventory.wkld.vpc.id in returnedInfo) else False}}"
-  when: (inventory.wkld is defined) and (inventory.wkld | length > 0)  
+    wkldDetails: "{{returnedInfo.stdout | from_json}}"
+  when: (inventory.wkld is defined) and (inventory.wkld | length > 0) 
 
-- name: Get list of management subnets to which to attach gateway
+- name: Set fact if attachment already exists
+  set_fact:
+    wkldExists: "{{True if(wkldDetails.TransitGatewayVpcAttachments | length > 0) else False}}"
+  when: (inventory.wkld is defined) and (inventory.wkld | length > 0)
+
+- name: Parse attachment information if it already exists
+  set_fact:
+    inventory: "{{inventory | combine({'tgw':{'wkld':attachDetails}}, recursive=True)}}"
+  vars:
+    attachDetails:
+      id: "{{wkldDetails.TransitGatewayVpcAttachments[0].TransitGatewayAttachmentId}}"
+      subnet_ids: "{{wkldDetails.TransitGatewayVpcAttachments[0].SubnetIds}}"
+  when: wkldExists and (inventory.wkld is defined) and (inventory.wkld | length > 0)
+
+- name: Get list of workload subnets to which to attach gateway
   set_fact:
     subnets: "{{inventory | json_query(query) | join(',')}}"
   vars:
     query: "wkld.subnets[*].id"
   when: (inventory.wkld is defined) and (inventory.wkld | length > 0) and (not wkldExists)  
 
-- name: Create transit gateway attachment to edge VPC
+- name: Create transit gateway attachment to workload VPC
   shell: |
     set timeout 300
     {{aws_path}}aws ec2 create-transit-gateway-vpc-attachment \
     --transit-gateway-id {{inventory.tgw.id}} \
-    --vpc-id {{inventory.mgmt.vpc.id}} \
+    --vpc-id {{inventory.wkld.vpc.id}} \
     --subnet-ids {{subnets}} \
     --tag-specifications ResourceType=transit-gateway-attachment,Tags='[{Key=Resource,Value={{inventory.resource}}}]'
 

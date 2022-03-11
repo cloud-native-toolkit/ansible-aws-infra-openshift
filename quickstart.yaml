@@ -8,7 +8,7 @@
     awsRegion: ap-southeast-2
     availZones:    # Add availability zones as required (must all be part of the above region)
     - 'ap-southeast-2a'
-    resourceGroup: 'recloud'
+    resourceGroup: 'qscloud'
     vpcCIDR: 10.0.0.0/16
     subnetPrefix: 24
     openshift_version: 4.9.21

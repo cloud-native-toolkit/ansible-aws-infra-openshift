@@ -58,3 +58,8 @@
     ]
   when: not rosa.access
 
+- name: Add pass to inventory
+  set_fact:
+    inventory: "{{inventory | combine({'rosa_validation':{'access':'pass'}}, recursive=True)}}"
+  when: rosa.access
+

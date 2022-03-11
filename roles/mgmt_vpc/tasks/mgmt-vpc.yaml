@@ -13,7 +13,7 @@
     vpcName: "{{vpc_name}}"
     usrProfile: "{{inventory.profile}}"
     reqRegion: "{{inventory.region|default(omit)}}"
-    # The cidr_block is obtained from the earlier subnet calcs - only create with egress CIDR
+    # The cidr_block is obtained from the earlier subnet calcs - only create with private CIDR
     cidr_block: "{{inventory.mgmt.cidrs.vpc}}"
 
 - name: Add VPC information to inventory

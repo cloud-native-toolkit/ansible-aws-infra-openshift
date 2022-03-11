@@ -1,0 +1,46 @@
+---
+
+- name: Check if route table already exists
+  community.aws.ec2_transit_gateway_info:
+    profile: "{{inventory.profile}}"
+    region: "{{inventory.region}}"
+    transit_gateway_ids: "{{inventory.tgw.id}}"
+  register: returnedInfo
+
+- name: Parse output for route table id details
+  set_fact:
+    inventory: "{{inventory | combine({'tgw':{'rtb':{'id':rtbId}}}, recursive=True) }}"
+  vars:
+    rtbId: "{{returnedInfo.transit_gateways[0].options.association_default_route_table_id}}"
+
+- name: Create static route to edge VPC in route table
+  shell: |
+    set timeout 300
+
+    {{aws_path}}aws ec2 create-transit-gateway-route \
+    --profile {{inventory.profile}} \
+    --destination-cidr-block 0.0.0.0/0 \
+    --transit-gateway-route-table-id {{inventory.tgw.rtb.id}} \
+    --transit-gateway-attachment-id {{inventory.tgw.edge.id}}
+
+    exit 0
+  args:
+    executable: /bin/bash
+  delegate_to: localhost
+  register: returnedInfo
+  when: (inventory.tgw.rtb.id is defined) and (inventory.tgw.edge.id is defined) and (inventory.tgw.routes is not defined)
+  failed_when: returnedInfo.stderr | length > 0
+
+- name: Add route to inventory
+  set_fact:
+    inventory: "{{inventory | combine({'tgw':{'routes':routeDetails}}, recursive=True)}}"
+  vars:
+    routeDetails:
+      - destination: 0.0.0.0/0
+        route: "{{inventory.tgw.edge.id}}"
+      - destination: "{{inventory.edge.vpc.cidr}}"
+        route: "{{inventory.tgw.edge.id}}"
+      - destination: "{{inventory.mgmt.vpc.cidr | default(omit)}}"
+        route: "{{inventory.tgw.mgmt.id | default(omit)}}"
+      - destination: "{{inventory.wkld.vpc.cidr | default(omit)}}"
+        route: "{{inventory.tgw.wkld.id}}"

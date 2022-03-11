@@ -15,3 +15,4 @@ host_prefix: 23
 no_retries: 30      # Number of retries when waiting for completion
 retry_delay: 120    # Delay between retries when waiting for competion
 ready_state: "ready"
+privatelink: False

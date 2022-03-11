@@ -1,6 +1,0 @@
----
-
-cluster_name: '{{ undef(hint="Must define a cluster name")}}'
-no_retries: 30
-retry_delay: 120
-ready_state: "ready"

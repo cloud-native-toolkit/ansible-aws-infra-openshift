@@ -9,6 +9,8 @@
     awsRegion: ap-southeast-2
     availZones:    # Add availability zones as required (must all be part of the above region)
     - 'ap-southeast-2a'
+    #- 'ap-southeast-2b'
+    #- 'ap-southeast-2c'
     resourceGroup: 'recloud'  
     edge_name: 'edge'     # This forms the name of the VPC and other components - refer reference architecture
     wkld_name: 'wkld'     # This forms the name of the VPC and other components - refer reference architecture
@@ -18,7 +20,7 @@
     wkld_cidr: 10.2.0.0/16
     tierPrefix: 18       # This will be used to break the VPC CIDR up into subnets (public/private or ingress/egress)
     subnetPrefix: 24     # This is the prefix for the individual subnets within each tier
-    openshift_version: 4.9.21
+    openshift_version: 4.9.23
 
   tasks:
 
@@ -94,7 +96,7 @@
       set_fact:
         inventory: "{{inventory | combine({'wkld':{'cidrs':{'vpc':cidr}}}, recursive=True)}}"
       vars: 
-        cidr: "{{mgmt_cidr if(wkld_cidr is defined) else '10.2.0.0/16'}}"
+        cidr: "{{wkld_cidr if(wkld_cidr is defined) else '10.2.0.0/16'}}"
       when: >
         (inventory.wkld.cidrs.vpc is not defined) and
         (inventory.wkld is defined)
@@ -142,26 +144,115 @@
         name: wkld_vpc
       when: (inventory.wkld is defined)
 
-# Add wait tasks for ROSA clusters below before proceeding
-
     - include_role:
         name: vpc_networking
       when: (inventory.tgw is defined)
 
-# Needs to also modify mgmt and wkld VPCs
-# Include RTB across all VPCs
-    - include_role:
-        name: edge_rtbs
-      when: inventory.edge.rtbs is defined
-
-# Add the below to the tasks in each VPC    
-    - include_role:
-        name: management_rosa
+    - name: Create the management ROSA cluster
+      include_role:
+        name: rosa_create_cluster
+      vars:
+        cluster_name: "{{inventory.resource}}-{{inventory.mgmt.identifier}}"
+        machine_cidr: "{{inventory.mgmt.vpc.cidr}}"
+        subnets: "{{inventory | json_query('mgmt.subnets[*].id')}}"
+        region: "{{inventory.region}}"
+        profile: "{{inventory.profile}}"
+        version: "{{openshift_version}}"
+        wait_for_completion: false
+        new_vpc: False
+        privatelink: True
       when: (inventory.mgmt.rosa is defined) and (inventory.mgmt.rosa | length == 0)
 
-    - include_role:
-        name: workload_rosa
-      when: (inventory.wkld.rosa is defined) and (inventory.wkld.rosa | length == 0)  
+    - name: Create the workload ROSA cluster
+      include_role:
+        name: rosa_create_cluster
+      vars:
+        cluster_name: "{{inventory.resource}}-{{inventory.wkld.identifier}}"
+        machine_cidr: "{{inventory.wkld.vpc.cidr}}"
+        subnets: "{{inventory | json_query('wkld.subnets[*].id')}}"
+        region: "{{inventory.region}}"
+        profile: "{{inventory.profile}}"
+        version: "{{openshift_version}}"
+        wait_for_completion: false
+        new_vpc: False
+        privatelink: True
+      when: (inventory.wkld.rosa is defined) and (inventory.wkld.rosa | length == 0)
+
+    - name: Wait for management ROSA cluster to be ready (can take up to 60 minutes)
+      shell: |
+        {{rosa_path}}rosa describe cluster --cluster {{inventory.resource}}-{{inventory.mgmt.identifier}} | grep State
+      args:
+        executable: /bin/bash
+      register: response
+      until: '"ready" in response.stdout'
+      retries: 30
+      delay: 120
+      when: (inventory.mgmt.rosa is defined) and (inventory.mgmt.rosa | length == 0)
+
+    - name: Get management ROSA Cluster details
+      shell: |
+        {{rosa_path}}rosa describe cluster --cluster {{inventory.resource}}-{{inventory.mgmt.identifier}} | tr -s " " | grep ": " | sed 's/\"//g' | sed 's/ /_/g'
+      args:
+        executable: /bin/bash
+      register: clusterResponse
+      failed_when: clusterResponse.stderr | length > 0
+      when: (inventory.mgmt.rosa is defined) and (inventory.mgmt.rosa | length == 0)
+
+    - name: Convert management cluster details to facts
+      set_fact:
+        rosaDict: "{{ rosaDict | default({}) | combine( { item.split(':_')[0] | trim : item.split(':_')[1] | trim } )}}"
+      loop: "{{clusterResponse.stdout_lines}}"
+      when: (inventory.mgmt.rosa is defined) and (inventory.mgmt.rosa | length == 0)
+
+    - name: Update inventory with management ROSA Cluster details
+      set_fact:
+        inventory: "{{inventory | combine({'mgmt':{'rosa':rosaDetails}}, recursive=True)}}"
+      vars:
+        rosaDetails:
+          name: "{{rosaDict.Name}}"
+          id: "{{rosaDict.ID}}"
+          console: "{{rosaDict.Console_URL}}"
+          dns: "{{rosaDict.DNS}}"
+          state: "{{rosaDict.State | regex_replace('_','')}}"
+      when: (inventory.mgmt.rosa is defined) and (inventory.mgmt.rosa | length == 0)
+
+    - name: Wait for workload ROSA cluster to be ready (can take up to 60 minutes)
+      shell: |
+        {{rosa_path}}rosa describe cluster --cluster {{inventory.resource}}-{{inventory.wkld.identifier}} | grep State
+      args:
+        executable: /bin/bash
+      register: response
+      until: '"ready" in response.stdout'
+      retries: 30
+      delay: 120
+      when: (inventory.wkld.rosa is defined) and (inventory.wkld.rosa | length == 0)
+
+    - name: Get workload ROSA Cluster details
+      shell: |
+        {{rosa_path}}rosa describe cluster --cluster {{inventory.resource}}-{{inventory.wkld.identifier}} | tr -s " " | grep ": " | sed 's/\"//g' | sed 's/ /_/g'
+      args:
+        executable: /bin/bash
+      register: clusterResponse
+      failed_when: clusterResponse.stderr | length > 0
+      when: (inventory.wkld.rosa is defined) and (inventory.wkld.rosa | length == 0)
+
+    - name: Convert workload cluster details to facts
+      set_fact:
+        rosaDict: "{{ rosaDict | default({}) | combine( { item.split(':_')[0] | trim : item.split(':_')[1] | trim } )}}"
+      loop: "{{clusterResponse.stdout_lines}}"
+      when: (inventory.wkld.rosa is defined) and (inventory.wkld.rosa | length == 0)
+
+    - name: Update inventory with workload ROSA Cluster details
+      set_fact:
+        inventory: "{{inventory | combine({'wkld':{'rosa':rosaDetails}}, recursive=True)}}"
+      vars:
+        rosaDetails:
+          name: "{{rosaDict.Name}}"
+          id: "{{rosaDict.ID}}"
+          console: "{{rosaDict.Console_URL}}"
+          dns: "{{rosaDict.DNS}}"
+          state: "{{rosaDict.State | regex_replace('_','')}}"
+      when: (inventory.wkld.rosa is defined) and (inventory.wkld.rosa | length == 0)
 
     - name: Get the current time
       command: date

@@ -2,11 +2,12 @@
 
 # Create a new VPC and ROSA cluster in a single availabiltiy zone
 
-- name: Kick off single availability zone cluster creation
+- name: Kick off PrivateLink single availability zone cluster creation
   shell: |
     set timeout 300
 
     {{rosa_path}}rosa create cluster \
+    --sts -y \
     --cluster-name {{cluster_name}} \
     --machine-cidr {{machine_cidr}} \
     --service-cidr {{service_cidr}} \
@@ -21,6 +22,7 @@
     --etcd-encryption \
     --host-prefix {{host_prefix}} \
     --version {{version}} \
+    --private-link \
     --subnet-ids {{subnets|join(",")}}
 
     exit 0
@@ -28,6 +30,3 @@
     executable: /bin/bash
   delegate_to: localhost
   register: response
-
-- debug:
-    msg: "{{response}}"

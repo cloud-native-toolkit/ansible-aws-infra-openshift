@@ -48,6 +48,7 @@
     --authentication-options Type=certificate-authentication,MutualAuthentication={ClientRootCertificateChainArn={{client_cert}}} \
     --connection-log-options Enabled=false \
     --vpc-id {{vpcId}} \
+    {{--split-tunnel if(split_tunnel) else ''}} \
     --tag-specifications ResourceType=client-vpn-endpoint,Tags='[{Key=Name,Value="recloud-cvpn"},{Key=Resource,Value="recloud"}]'
 
     exit 0

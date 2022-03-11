@@ -80,7 +80,7 @@
         resource: "{{resource_group if(resource_group is defined) else inventory.resource}}"
         cidrList: "{{authorized_cidrs if(authorized_cidrs is defined) else cidr_list}}"
         subnetList: "{{subnet_list if(subnet_list is defined) else inventory.edge.subnets | json_query(query)}}"
-        query: "[?name.contains(@,'egress')].id"
+        query: "[?name.contains(@,'private')].id"
 
     - name: Get current time
       command: date

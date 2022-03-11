@@ -32,3 +32,7 @@
     ]
   when: not item.Exists
   loop: "{{accountList}}"
+
+- name: Add pass to inventory
+  set_fact:
+    inventory: "{{inventory | combine({'rosa_validation':{'roles':'pass'}}, recursive=True)}}"

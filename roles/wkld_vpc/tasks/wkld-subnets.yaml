@@ -18,18 +18,6 @@
     index_var: idx
     label: "{{item}}"
 
-- name: Create list of required public subnets
-  set_fact:
-    subnetList: "{{subnetList + [{ 'name':name, 'cidr':cidr, 'availability_zone':az }] }}"
-  vars:
-    name: "{{inventory.resource}}-{{inventory.wkld.identifier}}-public-{{idx}}"
-    cidr: "{{item}}"
-    az: "{{inventory.availability_zones[idx]}}"
-  loop: "{{inventory.wkld.cidrs.public.subnets}}"
-  loop_control:
-    index_var: idx
-    label: "{{item}}"
-
 # Check what subnets exist
 - name: Query AWS for list of existing subnets in VPC
   amazon.aws.ec2_vpc_subnet_info:
