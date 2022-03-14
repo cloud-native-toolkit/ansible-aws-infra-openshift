@@ -82,7 +82,7 @@
 
 - name: Parse returned data from AWS to determine subnet existance and create new list of subnet data
   set_fact:
-    newSubnetList: "{{newSubnetList | default([]) + [{'name':subnet_name,'avialability_zone':az, 'cidr':cidr, 'id':subnet_id, 'state':state}] }}"
+    newSubnetList: "{{newSubnetList | default([]) + [{'name':subnet_name,'availability_zone':az, 'cidr':cidr, 'id':subnet_id, 'state':state}] }}"
   vars:
     subnet_name: "{{item.tags.Name}}"
     az: "{{item.availability_zone}}"

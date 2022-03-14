@@ -81,6 +81,7 @@
         cidrList: "{{authorized_cidrs if(authorized_cidrs is defined) else cidr_list}}"
         subnetList: "{{subnet_list if(subnet_list is defined) else inventory.edge.subnets | json_query(query)}}"
         query: "[?name.contains(@,'private')].id"
+        split_tunnel: True
 
     - name: Get current time
       command: date

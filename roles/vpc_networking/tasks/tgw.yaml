@@ -136,6 +136,9 @@
     mgmtDetails: "{{returnedInfo.stdout | from_json}}"
   when: (inventory.mgmt is defined) and (inventory.mgmt | length > 0)
 
+- set_fact:
+    mgmtExists: False
+
 - name: Set fact if attachment already exists
   set_fact:
     mgmtExists: "{{True if(mgmtDetails.TransitGatewayVpcAttachments | length > 0) else False}}"
@@ -192,6 +195,9 @@
   set_fact: 
     wkldDetails: "{{returnedInfo.stdout | from_json}}"
   when: (inventory.wkld is defined) and (inventory.wkld | length > 0) 
+
+- set_fact:
+    wkldExists: False
 
 - name: Set fact if attachment already exists
   set_fact:

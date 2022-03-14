@@ -47,6 +47,21 @@
 
 - set_fact:
     publicRTBs: "{{newList}}"
+    routeList: []
+
+- name: Create list of routes to create - edge VPC routes
+  set_fact:
+    routeList: "{{routeList + [{'dest':inventory.edge.vpc.cidr,'gateway_id':'local'},{'dest':'0.0.0.0/0','gateway_id':inventory.edge.igw.id}]}}"
+
+- name: Add route for management VPC if VPC exists
+  set_fact:
+    routeList: "{{routeList + [{'dest':inventory.mgmt.vpc.cidr,'gateway_id':inventory.tgw.id}]}}"
+  when: inventory.mgmt.vpc.cidr is defined
+
+- name: Add route for workload VPC if VPC exists
+  set_fact:
+    routeList: "{{routeList + [{'dest':inventory.wkld.vpc.cidr,'gateway_id':inventory.tgw.id}]}}"
+  when: inventory.wkld.vpc.cidr is defined
 
 - name: Create public route tables if they do not exist
   amazon.aws.ec2_vpc_route_table:
@@ -57,21 +72,13 @@
       Name: "{{item.name}}"
       Resource: "{{inventory.resource}}"
     subnets: "{{ item.subnet_id }}"
-    routes:
-      - dest: "{{ inventory.edge.vpc.cidr }}"  
-        gateway_id: 'local'
-      - dest: '0.0.0.0/0'     # return connectivity traffic
-        gateway_id: "{{ inventory.edge.igw.id }}"
-      - dest: "{{ inventory.mgmt.vpc.cidr | default(omit) }}"
-        gateway_id: "{{ inventory.tgw.id if(inventory.mgmt.vpc.cidr is defined) else omit }}"
-      - dest: "{{ inventory.wkld.vpc.cidr | default(omit) }}"
-        gateway_id: "{{ inventory.tgw.id if(inventory.wkld.vpc.cidr is defined) else omit }}"
+    routes: "{{routeList}}"
   when: not item.exists
   loop: "{{publicRTBs}}"
 
 # Private route tables
 
-- name: Create list of private route tables to create
+- name: Create list of private route tables to create - edge, management and workload
   set_fact:
     privateRTBs: "{{privateRTBs | default([]) + [{'name':name, 'subnet_id':item.id}]}}"
   loop: "{{inventory.edge.subnets}}"
@@ -82,7 +89,7 @@
     name: "{{inventory.resource}}-{{inventory.edge.identifier}}-private-rtb-{{idx|string}}"
   when: '"private" in item.name'
 
-- name: Query AWS for existing of public route tables
+- name: Query AWS for existing of private route tables
   amazon.aws.ec2_vpc_route_table_info:
     filters:
       vpc-id: "{{ inventory.edge.vpc.id }}"
@@ -97,7 +104,7 @@
 - set_fact:
     newList: []
 
-- name: Parse return from query for existence of public subnet route tables
+- name: Parse return from query for existence of private subnet route tables
   set_fact:
     newList: "{{ newList + [{ 'name':item.name, 'subnet_id':item.subnet_id, 'exists':state }] }}"
   vars:

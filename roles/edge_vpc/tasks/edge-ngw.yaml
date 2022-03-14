@@ -6,7 +6,7 @@
 # NAT Gateway is deployed onto the public subnets
 - name: Generate list of NAT gateways to create
   set_fact:
-    natGWDict: "{{natGWDict | default([]) + [{'name':item.name+'-ngw','subnet_id':item.id}] }}"
+    natGWDict: "{{natGWDict | default([]) + [{'name':item.name+'-ngw','subnet_id':item.id,'availability_zone':item.availability_zone}] }}"
     newNATGWList: []    # Create empty list for next step
   when: '"public" in item.name'
   loop: "{{inventory.edge.subnets}}"
@@ -22,7 +22,7 @@
 
 - name: Parse returned data from AWS to determine NAT gateway existance and create new list of NAT gateway data - exists
   set_fact:
-    newNATGWList: "{{ newNATGWList | default([]) + [ { 'name':item.name, 'subnet_id':item.subnet_id, 'exists':True } ] }}"
+    newNATGWList: "{{ newNATGWList | default([]) + [ { 'name':item.name, 'subnet_id':item.subnet_id, 'availability_zone':item.availability_zone, 'exists':True } ] }}"
   when: natGWReturnedInfo.results[idx].result | length > 0
   loop: "{{natGWDict}}"
   loop_control:
@@ -30,7 +30,7 @@
 
 - name: Parse returned data from AWS to determine NAT gateway existance and create new list of NAT gateway data - does not exist
   set_fact:
-    newNATGWList: "{{ newNATGWList | default([]) + [ { 'name':item.name, 'subnet_id':item.subnet_id, 'exists':False } ] }}"
+    newNATGWList: "{{ newNATGWList | default([]) + [ { 'name':item.name, 'subnet_id':item.subnet_id, 'availability_zone':item.availability_zone, 'exists':False } ] }}"
   when: natGWReturnedInfo.results[idx].result | length == 0
   loop: "{{natGWDict}}"
   loop_control:
@@ -71,7 +71,7 @@
 
 - name: Parse NAT Gateway information and populate new dictionary
   set_fact:
-    newDict: "{{ newDict | default([]) + [{ 'name':item.name,'subnet_id':item.subnet_id,'exists':True, 'private_ip':private_ip, 'id':gw_id }] }}"
+    newDict: "{{ newDict | default([]) + [{ 'name':item.name,'subnet_id':item.subnet_id, 'availability_zone':item.availability_zone, 'exists':True, 'private_ip':private_ip, 'id':gw_id }] }}"
   vars:
     private_ip: "{{ natGWReturnedInfo.results[idx].result[0].nat_gateway_addresses[0].private_ip }}"
     gw_id: "{{ natGWReturnedInfo.results[idx].result[0].nat_gateway_id }}"

@@ -18,7 +18,7 @@
     edge_cidr: 10.0.0.0/16
     mgmt_cidr: 10.1.0.0/16
     wkld_cidr: 10.2.0.0/16
-    tierPrefix: 18       # This will be used to break the VPC CIDR up into subnets (public/private or ingress/egress)
+    tierPrefix: 18       # This will be used to break the VPC CIDR up into subnets (public/private)
     subnetPrefix: 24     # This is the prefix for the individual subnets within each tier
     openshift_version: 4.9.23
 

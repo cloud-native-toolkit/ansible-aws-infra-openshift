@@ -51,6 +51,10 @@ This architecture consists of the following bill of materials:
 | PrivateLink | VPC gateway service that provides the abiltiy for Red Hat to manage the deployed cluster |
 | Client VPN Endpoint | Optional add-on to provision a Client VPN Endpoint providing individual client access to the environment. |
 
+## Limitations
+
+- The automation only supports both management and workload VPCs.
+
 ## Example Usage
 
 1. Ensure that a boto profile is created and AWS CLI is installed (if not follow guide [here](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-welcome.html))
