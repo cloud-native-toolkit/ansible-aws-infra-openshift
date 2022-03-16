@@ -11,6 +11,6 @@ Choose the reference architecture to build for further instructions:
 - [Standard reference architecture instructions](./standard.md)
 - [Advanced reference architecture instructions](./advanced.md)
 
-Post installation, optionally, add an AWS provided client VPN endpoint for access to the environment per the instructions [here](./cvpn-readme.md).
+Post installation, optionally add an AWS provided client VPN endpoint for access to the environment per the instructions [here](./cvpn-readme.md).
 
  

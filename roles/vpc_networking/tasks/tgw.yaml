@@ -95,7 +95,7 @@
 
 - name: Get list of edge subnets to which to attach gateway
   set_fact:
-    subnets: "{{inventory | json_query(query) | join(',')}}"
+    subnets: "{{inventory | json_query(query) | join(' ')}}"
   vars:
     query: "edge.subnets[?contains(name,'private')].id"
   when: (inventory.edge is defined) and (inventory.edge | length > 0) and (not edgeExists)
@@ -155,7 +155,7 @@
 
 - name: Get list of management subnets to which to attach gateway
   set_fact:
-    subnets: "{{inventory | json_query(query) | join(',')}}"
+    subnets: "{{inventory | json_query(query) | join(' ')}}"
   vars:
     query: "mgmt.subnets[*].id"
   when: (inventory.mgmt is defined) and (inventory.mgmt | length > 0) and (not mgmtExists)  
@@ -215,7 +215,7 @@
 
 - name: Get list of workload subnets to which to attach gateway
   set_fact:
-    subnets: "{{inventory | json_query(query) | join(',')}}"
+    subnets: "{{inventory | json_query(query) | join(' ')}}"
   vars:
     query: "wkld.subnets[*].id"
   when: (inventory.wkld is defined) and (inventory.wkld | length > 0) and (not wkldExists)  

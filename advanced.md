@@ -119,3 +119,26 @@ Should return information on the current VPCs for your default region. <i>The de
 
 The environment setup by the Ansible automation above is shown below.
 ![Advanced architecture automated deployment](./static/advanced.png)
+
+## Post installation tasks
+
+Setup access to the private clusters
+
+        Options include:
+        - VPN gateway between onsite and AWS transit gateway.
+        - Proxy servers and load balancer in Edge VPC for public access
+        - Client VPN Endpoint
+        - Remote desktop/jumpbox gateways
+
+As an example, the following will configure an OpenVPN access server in AWS and allow a client configuration file to be downloaded.
+
+1. Extend the Route53 DNS OpenShift zone from the management VPC into the edge VPC
+1. Extend the Route53 DNS OpenShift zone from the workload VPC into the edge VPC
+1. Follow the instructions [here](./cvpn-readme.md) to create the AWS OpenVPN Client VPN access server endpoint
+1. Add the DNS servers to the downloaded configuration
+
+        dhcp-option DNS 10.0.0.2 10.1.0.2
+
+1. Configure your OpenVPN client with the downloaded configuration
+1. Connect the VPN
+1. Operate locally as if you are on the same network as the AWS VPC

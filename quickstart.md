@@ -12,17 +12,21 @@ The module depends upon the following software components being installed on the
 - AWS CLI version 2.4.11 or higher (follow the guide [here](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-welcome.html))
 - ROSA CLI version 1.1.7 or higher (follow the guide [here](https://docs.openshift.com/rosa/rosa_getting_started/rosa-installing-rosa.html))
 
-## Module Dependences
+### Module Dependences
 
 This module makes use of the following Ansible modules.
 
 - amazon.aws
 - amazon.community.aws
 
-## Subscription Dependencies
+### Subscription Dependencies
 
 - AWS administrative access
 - Red Hat OpenShift subscription access enabled on AWS
+
+## Limitations
+
+- The automation is designed to work on Linux or Mac operating systems. Some aspects may not function with Windows based build machines.
 
 ## Bill of Materials
 
@@ -30,7 +34,7 @@ This architecture consists of the following bill of materials:
 
 | Item | Description |
 |------------------ | ------------------------------------------------------------------------------- |
-| VPC | Provides for ingress and egress for the environment to and from the internet.  |
+| VPC | Provides a private network environment within the AWS cloud that hosts the other services.  |
 | Public Subnets | Provides network interface for devices such as VPN endpoints and NAT gateways.  |
 | Private Subnets | Provide attachment for OpenShift cluster nodes.  |
 | Internet Gateway (IGW) | Provides the interface to the internet for the VPC. |

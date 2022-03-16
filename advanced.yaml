@@ -9,9 +9,9 @@
     awsRegion: ap-southeast-2
     availZones:    # Add availability zones as required (must all be part of the above region)
     - 'ap-southeast-2a'
-    #- 'ap-southeast-2b'
-    #- 'ap-southeast-2c'
-    resourceGroup: 'recloud'  
+    - 'ap-southeast-2b'
+    - 'ap-southeast-2c'
+    resourceGroup: 'adcloud'  
     edge_name: 'edge'     # This forms the name of the VPC and other components - refer reference architecture
     wkld_name: 'wkld'     # This forms the name of the VPC and other components - refer reference architecture
     mgmt_name: 'mgmt'     # This forms the name of the VPC and other components - refer reference architecture

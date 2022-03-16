@@ -1,22 +1,35 @@
 ---
 
-- name: Check if route table already exists
-  community.aws.ec2_transit_gateway_info:
-    profile: "{{inventory.profile}}"
-    region: "{{inventory.region}}"
-    transit_gateway_ids: "{{inventory.tgw.id}}"
+- name: Get details of current route table
+  shell: |
+    set timeout 300
+
+    {{aws_path}}aws ec2 describe-transit-gateway-route-tables \
+    --filters Name=transit-gateway-id,Values={{inventory.tgw.id}}
+     
+    exit 0
+  args:
+    executable: /bin/bash
+  delegate_to: localhost
   register: returnedInfo
+  failed_when: returnedInfo.stderr | length > 0
+
+- name: Set fact with response
+  set_fact:
+    rtbQuery: "{{returnedInfo.stdout | from_json}}"
+
+- name: Fail if no route table exists or more than one route table
+  fail:
+    msg: "{{ERROR: No default route table found for transit gateway {{inventory.tgw.id}}}}"
+  when: rtbQuery | length != 1
 
 - name: Parse output for route table id details
   set_fact:
     inventory: "{{inventory | combine({'tgw':{'rtb':{'id':rtbId,'name':name}}}, recursive=True) }}"
+    routeExists: "{{True if(rtbQuery.TransitGatewayRouteTables[0].Tags.Name is defined) else False}}"
   vars:
-    rtbId: "{{returnedInfo.transit_gateways[0].options.association_default_route_table_id}}"
+    rtbId: "{{rtbQuery.TransitGatewayRouteTables[0].TransitGatewayRouteTableId}}"
     name: "{{inventory.resource}}-tgw-rtb"
-
-- name: Determine if routes already created
-  set_fact:
-    routeExists: "{{True if(returnedInfo.transit_gateways[0].tags.Name is defined) else False}}"
 
 - name: Create static route to edge VPC in route table
   shell: |
@@ -54,16 +67,15 @@
 
 - name: Build list of routes to create - edge VPC routes
   set_fact:
-    routeList: "{{routeList | default([]) + [{'destination':'0.0.0.0/0','route':inventory.edge.vpc.cidr},{'destination':inventory.tgw.edge.id,'route':inventory.tgw.edge.id}]}}"
-
-- name: Add management routes if management VPC exists
-  set_fact:
-    routeList: "{{routeList + [{'destination':inventory.mgmt.vpc.cidr,'route':inventory.tgw.mgmt.id}]}}"
-  when: inventory.mgmt is defined and inventory.mgmt | length > 0
-
-- name: Add workload routes if workload VPC exists
-  set_fact:
-    routeList: "{{routeList + [{'destination':inventory.wkld.vpc.cidr,'route':inventory.tgw.wkld.id}]}}"
+    routeList: 
+      - dest: 0.0.0.0/0
+        route: "{{inventory.tgw.edge.id}}"
+      - dest: "{{inventory.edge.vpc.cidr}}"
+        route: "{{inventory.tgw.edge.id}}"
+      - dest: "{{inventory.mgmt.vpc.cidr}}"
+        route: "{{inventory.tgw.mgmt.id}}"
+      - dest: "{{inventory.wkld.vpc.cidr}}"
+        route: "{{inventory.tgw.wkld.id}}"
 
 - name: Add route to inventory
   set_fact:

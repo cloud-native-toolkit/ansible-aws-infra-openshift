@@ -8,8 +8,8 @@
 
 
   vars:
-    server_cert: arn:aws:acm:ap-southeast-2:000000000000:certificate/aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee
-    client_cert: arn:aws:acm:ap-southeast-2:000000000000:certificate/ffffffff-cccc-eeee-0000-aaaaaaaaaaaa
+    server_cert: arn:aws:acm:ap-southeast-2:005990573564:certificate/dd4a91a6-5fdd-4ada-8901-3aa4b3632e62
+    client_cert: arn:aws:acm:ap-southeast-2:005990573564:certificate/f807a87c-cd96-4251-8dc1-306c402b1642
     client_cidr: 10.100.0.0/18
 
     # Uncomment and modify the below to overwrite an existing inventory file (which will use the edge VPC)
@@ -69,6 +69,14 @@
         msg: "ERROR: Please provide a list of CIDRs to authorize or ensure they exist in inventory.yaml file"
       when: (authorized_cidrs is not defined) and (cidr_list is not defined)
 
+    - name: Create list of subnets to associate with from inventory if not provided
+      set_fact:
+        edge_subnets: "{{edge_subnets | default([]) + [item.id]}}"
+      loop: "{{inventory.edge.subnets}}"
+      loop_control:
+        label: "{{item.name}}"
+      when: (subnet_list is not defined) and ('public-subnet' in item.name )
+
     - include_role:
         name: create_cvpn
       vars:
@@ -79,8 +87,7 @@
         cvpn_name: "{{local_name if(local_name is defined) else edge_name}}"
         resource: "{{resource_group if(resource_group is defined) else inventory.resource}}"
         cidrList: "{{authorized_cidrs if(authorized_cidrs is defined) else cidr_list}}"
-        subnetList: "{{subnet_list if(subnet_list is defined) else inventory.edge.subnets | json_query(query)}}"
-        query: "[?name.contains(@,'private')].id"
+        subnetList: "{{subnet_list if(subnet_list is defined) else edge_subnets}}"
         split_tunnel: True
 
     - name: Get current time
