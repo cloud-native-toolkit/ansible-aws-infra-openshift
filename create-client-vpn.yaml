@@ -8,8 +8,8 @@
 
 
   vars:
-    server_cert: arn:aws:acm:ap-southeast-2:005990573564:certificate/dd4a91a6-5fdd-4ada-8901-3aa4b3632e62
-    client_cert: arn:aws:acm:ap-southeast-2:005990573564:certificate/f807a87c-cd96-4251-8dc1-306c402b1642
+    server_cert: arn:aws:acm:ap-southeast-2:123456789012:certificate/abcdef01-abcd-abcd-1234-12345abcdef1
+    client_cert: arn:aws:acm:ap-southeast-2:123456789012:certificate/01fedcba-dcba-4251-4321-0987654321fe
     client_cidr: 10.100.0.0/18
 
     # Uncomment and modify the below to overwrite an existing inventory file (which will use the edge VPC)
