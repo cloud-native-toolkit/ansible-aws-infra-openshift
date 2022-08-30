@@ -13,4 +13,8 @@ Choose the reference architecture to build for further instructions:
 
 Post installation, optionally add an AWS provided client VPN endpoint for access to the environment per the instructions [here](./cvpn-readme.md).
 
- 
+### How to Run Ansible Playbook
+
+```
+$ ansible-playbook -vvv quickstart.yaml
+```
